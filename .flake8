@@ -1,0 +1,6 @@
+[flake8] # https://flake8.pycqa.org/en/6.0.0/user/options.html#cmdoption-flake8-select
+filename =
+    ./examples/**.py,
+    ./apps/**.py,
+ignore=E203,E401,E402,E501,W503
+indent-size=4
