@@ -6,7 +6,7 @@
 #
 # Implements NiceGUI web application for face tracking using DeGirum's face recognition package.
 # Provides a live stream of the camera feed, allows video clip annotation, and manages face reID database.
-# You can configure all the settings in the `face_tracking.yaml` file.
+# You can configure all the settings in the `config.yaml` file.
 #
 # Pre-requisites:
 # - Install NiceGUI: `pip install nicegui`
@@ -47,7 +47,7 @@ def startup():
 
     # load settings from YAML file
     global config
-    config, _ = degirum_face.FaceTrackerConfig.from_yaml(yaml_file="face_tracking.yaml")
+    config, _ = degirum_face.FaceTrackerConfig.from_yaml(yaml_file="config.yaml")
     config.live_stream_mode = "WEB"
 
     # create FaceTracker instance
@@ -106,12 +106,36 @@ def health_check():
     )
 
 
+@app.post("/notify")
+async def notify(request: Request):
+    """Webhook endpoint to receive notifications from face recognition pipeline.
+
+    Broadcasts the notification to all connected main page clients.
+    """
+
+    body = (await request.body()).decode("utf-8")
+
+    # Broadcast notification to all connected clients on the main page
+    for client in app.clients("/"):
+        with client:
+            ui.notify(body, type="info", position="top")
+
+    return JSONResponse({"status": "notification sent", "message": body})
+
+
 @ui.page("/")
 def main_page():
+
+    # View names
+    VIEW_CONFIGURATION = "Configuration"
+    VIEW_LIVE_STREAM = "Live Stream"
 
     face_map = degirum_face.ObjectMap()
     clips = clip_manager.list_clips()
     known_objects = clip_manager.db.list_objects()
+
+    # Track current view selection
+    current_view = {"selection": VIEW_CONFIGURATION}
 
     def sorted_known_objects():
         """Return known objects sorted by their attributes."""
@@ -120,6 +144,25 @@ def main_page():
     #
     # UI callbacks
     #
+
+    def switch_view(view_name: str):
+        """Switch between different views in the main area."""
+        current_view["selection"] = view_name
+
+        # Update button styling
+        for name, btn in nav_buttons.items():
+            if name == view_name:
+                btn.classes(remove="text-blue-400", add="bg-blue-100 text-blue-800")
+            else:
+                btn.classes(remove="bg-blue-100 text-blue-800", add="text-blue-400")
+
+        # Update content visibility
+        if view_name == VIEW_CONFIGURATION:
+            config_container.visible = True
+            stream_container.visible = False
+        elif view_name == VIEW_LIVE_STREAM:
+            config_container.visible = False
+            stream_container.visible = True
 
     async def delete_selected():
         """Delete the selected video clips."""
@@ -366,132 +409,190 @@ def main_page():
         ui.button("✔ OK", on_click=db_info_dialog.close)
 
     #
-    # Main page layout
+    # Main page layout with left navigation panel
     #
-    with ui.column().classes("h-screen w-screen"):
+    with ui.row().classes("h-screen w-screen"):
 
-        ui.button(
-            "▶ Open Live Stream",
-            on_click=lambda: ui.navigate.to("/stream", new_tab=True),
-        )
+        # Left navigation panel
+        with ui.column().classes("w-48 h-full bg-white p-4 border-r border-gray-300"):
+            ui.label("Navigation").classes("text-xl font-bold mb-6 text-gray-800")
 
-        with ui.row().classes("w-full h-[calc(100vh-8rem)]"):
-
-            # Left side: video clips list card
-            with ui.card().classes(
-                "w-full h-[calc(100vh-8rem)] max-w-lg border border-gray-300 p-4"
-            ):
-                ui.label("Video Clips of Captured Events").classes(
-                    "text-xl font-bold mb-4"
+            config_btn = (
+                ui.button(
+                    VIEW_CONFIGURATION, on_click=lambda: switch_view(VIEW_CONFIGURATION)
                 )
+                .classes("w-full mb-2 justify-start")
+                .props("flat color=blue")
+            )
 
-                clip_grid = (
-                    ui.aggrid(
-                        {
-                            "columnDefs": [
-                                {
-                                    "headerName": "Created",
-                                    "field": "created",
-                                    "checkboxSelection": True,
-                                    "sort": "desc",
-                                },
-                                {
-                                    "headerName": "File Name",
-                                    "field": "file_name",
-                                },
-                                {
-                                    "headerName": "Viewed",
-                                    "field": "annotated",
-                                    "maxWidth": 150,
-                                    "resizable": False,
-                                },
-                            ],
-                            "defaultColDef": {
-                                "resizable": True,
-                                "sortable": True,
-                                "filter": True,
-                            },
-                            "rowSelection": "multiple",
-                        },
-                    )
-                    .classes("w-full")
-                    .style("flex-grow: 1")
-                ).on("selectionChanged", on_clip_selected)
-
-                with ui.row():
-                    ui.button("ℹ DB Info", on_click=db_info_dialog_open)
-                    ui.button("✖ Delete Selected", on_click=delete_selected).props(
-                        "color=negative"
-                    )
-                    ui.button("⟳ Refresh", on_click=refresh_clips_async)
-
-            # Middle: Annotation card and video player
-            with ui.card().classes("w-full max-w-lg border border-gray-300 p-4"):
-                annotation_label = (
-                    ui.label("Select a clip to view/annotate")
-                    .classes("text-xl font-bold mb-4")
-                    .style("white-space: pre-wrap")
+            stream_btn = (
+                ui.button(
+                    VIEW_LIVE_STREAM, on_click=lambda: switch_view(VIEW_LIVE_STREAM)
                 )
+                .classes("w-full mb-2 justify-start")
+                .props("flat color=blue")
+            )
 
-                # Annotation spinner
-                ann_spinner = (
-                    ui.spinner(size="lg")
-                    .props("color=primary")
-                    .classes("absolute top-1/2 left-1/2")
-                )
+            # Store button references for styling updates
+            nav_buttons = {VIEW_CONFIGURATION: config_btn, VIEW_LIVE_STREAM: stream_btn}
 
-                # Video player
-                video_player = ui.video(src="").classes("w-full h-full")
+        # Main content area on the right
+        with ui.column().classes("flex-1 h-full overflow-auto"):
 
-                # Annotation button
-                ann_button = ui.button("🖉 Annotate", on_click=annotate_clip)
+            # Configuration view container
+            config_container = ui.column().classes("w-full h-full")
+            with config_container:
+                with ui.row().classes("w-full h-[calc(100vh-2rem)] p-4"):
 
-                # Annotation grid
-                ann_grid = ui.aggrid(
-                    {
-                        "rowData": [],
-                        "columnDefs": [
+                    # Left side: video clips list card
+                    with ui.card().classes(
+                        "w-full h-full max-w-lg border border-gray-300 p-4 flex flex-col"
+                    ):
+                        ui.label("Video Clips of Captured Events").classes(
+                            "text-xl font-bold mb-4"
+                        )
+
+                        clip_grid = (
+                            ui.aggrid(
+                                {
+                                    "columnDefs": [
+                                        {
+                                            "headerName": "Created",
+                                            "field": "created",
+                                            "checkboxSelection": True,
+                                            "sort": "desc",
+                                        },
+                                        {
+                                            "headerName": "File Name",
+                                            "field": "file_name",
+                                        },
+                                        {
+                                            "headerName": "Viewed",
+                                            "field": "annotated",
+                                            "maxWidth": 150,
+                                            "resizable": False,
+                                        },
+                                    ],
+                                    "defaultColDef": {
+                                        "resizable": True,
+                                        "sortable": True,
+                                        "filter": True,
+                                    },
+                                    "rowSelection": "multiple",
+                                },
+                            ).classes("w-full h-[calc(100vh-16rem)]")
+                        ).on("selectionChanged", on_clip_selected)
+
+                        with ui.row():
+                            ui.button("ℹ DB Info", on_click=db_info_dialog_open)
+                            ui.button(
+                                "✖ Delete Selected", on_click=delete_selected
+                            ).props("color=negative")
+                            ui.button("⟳ Refresh", on_click=refresh_clips_async)
+
+                    # Middle: Annotation card and video player
+                    with ui.card().classes(
+                        "w-full h-full max-w-lg border border-gray-300 p-4 flex flex-col"
+                    ):
+                        annotation_label = (
+                            ui.label("Select a clip to view/annotate")
+                            .classes("text-xl font-bold mb-4")
+                            .style("white-space: pre-wrap")
+                        )
+
+                        # Annotation spinner
+                        ann_spinner = (
+                            ui.spinner(size="lg")
+                            .props("color=primary")
+                            .classes("absolute top-1/2 left-1/2")
+                        )
+
+                        # Video player
+                        video_player = (
+                            ui.video(src="")
+                            .classes("w-full mb-4")
+                            .style("max-height: 300px")
+                        )
+
+                        # Annotation button
+                        ann_button = ui.button(
+                            "🖉 Annotate", on_click=annotate_clip
+                        ).classes("mb-4")
+
+                        # Annotation grid
+                        ann_grid = ui.aggrid(
                             {
-                                "headerName": "Track ID",
-                                "field": "id",
-                                "sortable": True,
-                                "filter": True,
-                            },
-                            {
-                                "headerName": "Person",
-                                "field": "attributes",
-                                "editable": True,
-                                "cellEditor": "agSelectCellEditor",
-                                "cellEditorParams": {
-                                    "values": sorted_known_objects(),
+                                "rowData": [],
+                                "columnDefs": [
+                                    {
+                                        "headerName": "Track ID",
+                                        "field": "id",
+                                        "sortable": True,
+                                        "filter": True,
+                                    },
+                                    {
+                                        "headerName": "Person",
+                                        "field": "attributes",
+                                        "editable": True,
+                                        "cellEditor": "agSelectCellEditor",
+                                        "cellEditorParams": {
+                                            "values": sorted_known_objects(),
+                                        },
+                                        "sortable": True,
+                                        "filter": True,
+                                    },
+                                ],
+                                "defaultColDef": {
+                                    "resizable": True,
+                                    "sortable": True,
+                                    "filter": True,
                                 },
-                                "sortable": True,
-                                "filter": True,
-                            },
-                        ],
-                        "defaultColDef": {
-                            "resizable": True,
-                            "sortable": True,
-                            "filter": True,
-                        },
-                        "stopEditingWhenCellsLoseFocus": True,
-                        "singleClickEdit": True,
-                    }
-                ).classes("w-full")
+                                "stopEditingWhenCellsLoseFocus": True,
+                                "singleClickEdit": True,
+                            }
+                        ).classes("w-full h-64 mb-4")
 
-                with ui.row():
-                    # Add attribute dialog button
-                    add_attr_button = ui.button(
-                        "✛ New Person", on_click=add_attr_dialog.open
-                    )
+                        with ui.row():
+                            # Add attribute dialog button
+                            add_attr_button = ui.button(
+                                "✛ New Person", on_click=add_attr_dialog.open
+                            )
 
-                    # Update database button
-                    update_db_button = ui.button(
-                        "✔ Add Embeddings to DB", on_click=update_embeddings_in_db
-                    ).props("color=negative")
+                            # Update database button
+                            update_db_button = ui.button(
+                                "✔ Add Embeddings to DB",
+                                on_click=update_embeddings_in_db,
+                            ).props("color=negative")
 
+            # Live Stream view container
+            stream_container = ui.column().classes("w-full h-full")
+            with stream_container:
+                with ui.row().classes("w-full h-[calc(100vh-2rem)] p-4"):
+                    with ui.card().classes(
+                        "w-full h-full max-w-7xl border border-gray-300 p-4 flex flex-col"
+                    ):
+                        with ui.row().classes(
+                            "w-full items-center justify-between mb-4"
+                        ):
+                            ui.label("Live Stream").classes("text-xl font-bold")
+                            ui.button(
+                                icon="open_in_new",
+                                on_click=lambda: ui.navigate.to(
+                                    "/stream", new_tab=True
+                                ),
+                            ).props("flat color=blue").tooltip("Open in New Tab")
+
+                        assert context.client.request
+                        host = context.client.request.headers.get("host", "localhost")
+                        stream_url = f"http://{host.split(':')[0]}:8888/{config.live_stream_rtsp_url}"
+                        ui.element("iframe").props(f'src="{stream_url}"').classes(
+                            "w-full h-[calc(100vh-12rem)]"
+                        )
+
+    # Initialize view
     show_hide_ann_controls("initial")
     refresh_clips()
+    switch_view(VIEW_CONFIGURATION)
 
 
 @ui.page("/stream")

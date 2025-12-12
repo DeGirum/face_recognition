@@ -17,7 +17,7 @@
 #
 # Pre-requisites:
 # - Install DeGirum Face SDK: `pip install degirum-face`
-# - Run `face_tracking_web_app.py` or `face_tracking_simple.py` examples to collect video clips of unknown persons
+# - Run `face_tracking_simple.py` examples to collect video clips of unknown persons
 #
 
 

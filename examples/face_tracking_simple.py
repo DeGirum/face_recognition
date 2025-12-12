@@ -6,19 +6,18 @@
 #
 # Implements a simple face tracking example using DeGirum Face Tracking library.
 # This example demonstrates how to set up a face tracking pipeline and display live video on local UI.
-# It uses the same YAML setup as the `face_tracking_web_app.py` example.
-# It uses ReID database which is filled with embeddings from the `face_tracking_web_app.py` example,
-# so it is recommended to run that example first unless you explicitly want to collect clips of all
-# discovered faces.
-#
-# When unknown face is detected, it saves the video clip to the configured storage
+# When an unknown face is detected, it saves the video clip to the configured storage
 # and sends a notification.
+#
+# It uses ReID database which is filled with embeddings from the `face_tracking_add_embeddings.py` example.
+# One way to populate thes database is to collect clips of unknown faces by running this example first,
+# then run `face_tracking_add_embeddings.py` example to annotate collected clips and add embeddings to the database.
 #
 # You can configure all the settings in the `face_tracking.yaml` file.
 #
 # Pre-requisites:
 # - Install DeGirum Face SDK: `pip install degirum-face`
-# - Run `face_tracking_web_app.py` or `face_tracking_add_embeddings.py` examples to populate the ReID database.
+# - Run `face_tracking_add_embeddings.py` examples to populate the ReID database.
 #
 
 import degirum_face
