@@ -62,16 +62,6 @@ for face in result.faces:
     print(face)
 ```
 
-**Using your own images** — CLI examples for batch enrollment and recognition:
-
-```bash
-# Enroll faces from your images
-python examples/face_recognition_enroll.py path/to/photo1.jpg "Alice" path/to/photo2.jpg "Bob"
-
-# Recognize faces in test images
-python examples/face_recognition_simple.py path/to/test1.jpg path/to/test2.jpg
-```
-
 ## Examples & Applications
 
 | Example | Description |
