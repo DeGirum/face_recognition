@@ -1,13 +1,31 @@
 # FaceTracker Guide
 
-This guide covers `FaceTracker` for real-time video face tracking with persistent face IDs, alerting, and clip recording.
+## Overview
+
+`FaceTracker` is designed for **continuous video monitoring** applications where you need to:
+
+- **Monitor live camera feeds** - Detect and identify faces in real-time from webcams, IP cameras, or RTSP streams
+- **Track individuals across frames** - Maintain persistent identity as people move through the scene
+- **Receive automated alerts** - Get notified when unknown persons appear or when specific individuals are detected
+- **Record evidence clips** - Automatically save video clips when alert conditions are met
+- **Stream annotated video** - Display or broadcast live video with face annotations and identity labels
+
+**Real-world scenarios:**
+- **Access control**: Alert when unauthorized persons approach secured areas
+- **Security monitoring**: Track unknown individuals entering restricted zones
+- **Attendance systems**: Identify and log known employees/students entering facilities
+- **Customer analytics**: Count and track unique visitors in retail environments
+- **Safety compliance**: Monitor for presence/absence of required personnel
+
+Unlike `FaceRecognizer` which processes individual images or batches independently, `FaceTracker` maintains **temporal continuity** - tracking the same face across hundreds of frames, triggering alerts only when confidence thresholds are met, and optimizing compute by skipping redundant processing for tracked faces.
 
 ## Prerequisites
 
-Before reading this guide, you should:
+Before using FaceTracker, you should:
 - Understand [FaceRecognizer](face_recognizer.md) concepts (configuration, methods, hardware selection)
 - Know the basics of face detection, embedding, and database matching
 - Have completed the FaceRecognizer examples
+- Be familiar with video processing concepts (frame rates, streams, etc.)
 
 ## When to Use FaceTracker vs FaceRecognizer
 
