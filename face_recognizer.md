@@ -72,7 +72,7 @@ Where to store the face embeddings database (`.lance` file). This is your "face 
 The minimum cosine similarity score (0.0-1.0) to consider two faces a match. Higher = stricter matching.
 
 ### 5. Face Filters (Optional)
-Optional filtering rules to improve recognition quality by skipping low-quality detections. Controlled by a `FaceFilterConfig` object. Common filters include small face filter, frontal filter, shift filter, zone filter, and ReID expiration filter.
+Optional filtering rules to improve recognition quality by skipping low-quality detections. Controlled by a `FaceFilterConfig` object. Common filters include small face filter, frontal filter, shift filter, and zone filter.
 
 See [Face Filtering Configuration](#face-filtering-configuration) for configuration details and examples.
 
@@ -544,6 +544,8 @@ config = degirum_face.FaceRecognizerConfig(
 )
 ```
 
+**Server setup:** See the [AI Server Setup Guide](https://docs.degirum.com/pysdk/user-guide-pysdk/setting-up-an-ai-server) for instructions on deploying your own AI inference server.
+
 **Recommended workflow:**
 1. Start with `@cloud` to experiment and find the right hardware for your use case
 2. Test your configuration and models
@@ -898,25 +900,9 @@ face_filters = degirum_face.FaceFilterConfig(
 
 **How it works:** Rejects faces where facial keypoints are clustered to one side of the bounding box
 
-#### 5. ReID Expiration Filter (Tracking Only)
+#### 5. ReID Expiration Filter
 
-In video/tracking scenarios, controls how often to re-run embedding for the same tracked face.
-
-```python
-face_filters = degirum_face.FaceFilterConfig(
-    enable_reid_expiration_filter=True,
-    reid_expiration_frames=30  # Re-embed every 30 frames
-)
-```
-
-**When to use:**
-- Real-time video tracking (with `FaceTracker`)
-- Want to reduce redundant embedding inference
-- Balance between update frequency and compute cost
-
-**How it works:** Once a face is embedded, skip re-embedding until N frames have passed
-
-**Note:** This filter is primarily used with `FaceTracker` for real-time video. For `FaceRecognizer` (single images/batches), it has minimal effect.
+**Note:** The ReID expiration filter is specific to face tracking workflows and does not impact `FaceRecognizer`. This filter will be covered in detail in the face tracking guide.
 
 ### Combining Filters
 
@@ -983,7 +969,8 @@ face_filters:
 
 **For Access Control / Security:**
 - Enable frontal filter (ensure clear face view)
-- Higher min_face_size (60-80 pixels)
+- Higher min_face_size (60-80 pixels, or even 200-400 pixels for maximum quality)
+- For strict access control, set min_face_size to ~50% of frame height to ensure close-up enrollment
 - Enable shift filter (avoid partial faces)
 - Use zone filter for entry points
 
@@ -996,9 +983,5 @@ face_filters:
 - Lower min_face_size (30-40 pixels)
 - Disable geometric filters (frontal, shift)
 - Skip zone filtering
-
-**For Video/Streaming:**
-- Enable reid_expiration_filter (reduce redundancy)
-- Adjust reid_expiration_frames based on scene dynamics (10-30 typical)
 
 

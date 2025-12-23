@@ -78,8 +78,19 @@ See [examples/](examples) for all available examples.
 
 ## Advanced Topics
 
-For production deployments, hardware optimization, and advanced features:
-- **[ADVANCED.md](ADVANCED.md)** — Hardware selection, custom configurations, YAML configs, real-time video processing, performance tuning
+For production deployments, hardware optimization, and advanced features, see the [Advanced Usage Guide](face_recognizer.md):
+
+- **Understanding the Defaults** - What the quickstart actually does behind the scenes
+- **Configuration Anatomy** - The 5 components of FaceRecognizerConfig
+- **FaceRecognizer Methods** - enroll_image(), enroll_batch(), predict(), predict_batch()
+- **Deployment Options** - Cloud (@cloud), local (@local), or remote AI server
+- **Hardware Selection** - 12+ accelerator platforms (Hailo, Intel NPU, NVIDIA GPU, etc.)
+- **YAML Configuration** - Clean, version-controlled config files for production
+- **Face Filtering** - Quality gates (small face, frontal, zone, shift filters)
+
+Quick links:
+- [face_recognizer.md](face_recognizer.md) - Complete FaceRecognizer guide
+- [examples/](examples) - Ready-to-run code samples
 
 ## License
 See [LICENSE](LICENSE#L1) for license details.
