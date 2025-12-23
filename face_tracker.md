@@ -44,7 +44,9 @@ Before using FaceTracker, you should:
 
 ## Table of Contents
 - [Understanding FaceTrackerConfig](#understanding-facetrackerconfig)
-- [FaceTracker Method](#facetracker-method)
+- [YAML Configuration Structure](#yaml-configuration-structure)
+- [Python Configuration Example](#python-configuration-example)
+- [FaceTracker Methods](#facetracker-methods)
 - [ReID Expiration Filter](#reid-expiration-filter)
 - [Complete Example](#complete-example)
 
@@ -88,7 +90,42 @@ Input video source and overrides for incorrect camera metadata.
 
 Configuration for saving video clips to S3-compatible object storage or local filesystem.
 
-**Parameters:**
+**In Python:**
+
+Storage is configured via the `clip_storage_config` parameter, which takes a `degirum_tools.ObjectStorageConfig` object:
+
+```python
+import degirum_tools
+
+# Local filesystem storage
+config = degirum_face.FaceTrackerConfig(
+    clip_storage_config=degirum_tools.ObjectStorageConfig(
+        endpoint="./clips",        # Local directory path
+        bucket="unknown_faces"      # Subdirectory name
+    )
+)
+
+# S3-compatible cloud storage
+config = degirum_face.FaceTrackerConfig(
+    clip_storage_config=degirum_tools.ObjectStorageConfig(
+        endpoint="s3.amazonaws.com",
+        access_key="YOUR_ACCESS_KEY",
+        secret_key="YOUR_SECRET_KEY",
+        bucket="face-tracking-clips",
+        url_expiration_s=3600       # Optional: presigned URL expiration
+    )
+)
+
+# Disabled (default)
+config = degirum_face.FaceTrackerConfig(
+    clip_storage_config=degirum_tools.ObjectStorageConfig(
+        endpoint="",
+        bucket=""
+    )
+)
+```
+
+**ObjectStorageConfig parameters:**
 
 - **`endpoint`** - S3-compatible storage endpoint URL (e.g., `s3.amazonaws.com`) or local directory path (e.g., `./clips`)
 - **`access_key`** - Storage access key (not needed for local storage)
@@ -152,10 +189,92 @@ Configure live video streaming output.
 
 - **`live_stream_rtsp_url`** - RTSP URL path suffix (used when mode is `"WEB"`)
 
-### Complete Configuration Example
+---
+
+## YAML Configuration Structure
+
+FaceTracker supports complete configuration via YAML files. Here's the complete structure with all parameter groups:
+
+```yaml
+# Complete FaceTracker YAML Configuration Structure
+
+# Face detection model
+face_detector:
+  hardware: HAILORT/HAILO8                    # Runtime/device format
+  inference_host_address: "@cloud"            # @cloud, @local, or AI server hostname
+  model_zoo_url: degirum/hailo                # Optional: model zoo path
+  token: your_token_here                      # Optional: cloud API token
+
+# Face embedding model
+face_embedder:
+  hardware: HAILORT/HAILO8
+  inference_host_address: "@cloud"
+  model_zoo_url: degirum/hailo
+
+# Database settings
+db_path: ./face_tracking_db.lance
+cosine_similarity_threshold: 0.6
+
+# Face filters (inherited from FaceRecognizer)
+face_filters:
+  enable_small_face_filter: true
+  min_face_size: 50
+  enable_zone_filter: false
+  zone: [[x1,y1], [x2,y2], [x3,y3]]          # Polygon points (min 3)
+  enable_frontal_filter: true
+  enable_shift_filter: false
+  enable_reid_expiration_filter: true
+  reid_expiration_frames: 30
+
+# Video source settings
+video_source: 0                               # 0 for webcam, RTSP URL, or file path
+video_source_fps_override: 0.0                # Override FPS (0 = use source FPS)
+video_source_resolution_override: [0, 0]      # Override resolution (0 = use source)
+
+# Clip storage configuration
+storage:
+  endpoint: ""                                # S3 endpoint (empty = disabled)
+  access_key: ""                              # S3 access key
+  secret_key: ""                              # S3 secret key
+  bucket: ""                                  # S3 bucket name
+  url_expiration_s: 3600                      # Presigned URL expiration
+
+# Face tracking confirmation
+credence_count: 4                             # Frames to confirm a face
+
+# Alerting and notifications
+alerts:
+  alert_mode: ON_UNKNOWNS                     # NONE, ON_UNKNOWNS, ON_KNOWNS, ON_ALL
+  alert_once: true                            # Alert once per track vs every frame
+  clip_duration: 100                          # Clip length in frames
+  notification_config: "console://"           # Apprise notification URL
+  notification_message: "${time}: Unknown person detected. Video: [${filename}](${url})"
+  notification_timeout_s: 10                  # Notification timeout (optional)
+
+# Live streaming
+live_stream:
+  mode: LOCAL                                 # LOCAL, WEB, or NONE
+  rtsp_url: face_tracking                     # RTSP path suffix (for WEB mode)
+```
+
+**Loading from YAML:**
 
 ```python
 import degirum_face
+
+config, _ = degirum_face.FaceTrackerConfig.from_yaml(yaml_file="face_tracking.yaml")
+tracker = degirum_face.FaceTracker(config)
+```
+
+---
+
+## Python Configuration Example
+
+For Python-based configuration (without YAML):
+
+```python
+import degirum_face
+import degirum_tools
 
 config = degirum_face.FaceTrackerConfig(
     # Inherited FaceRecognizer settings
@@ -170,21 +289,25 @@ config = degirum_face.FaceTrackerConfig(
     db_path="./face_tracking_db.lance",
     cosine_similarity_threshold=0.6,
     
-    # Tracking-specific settings
+    # Video source
+    video_source=0,  # Webcam
+    
+    # Clip storage (S3 example)
+    clip_storage_config=degirum_tools.ObjectStorageConfig(
+        endpoint="s3.amazonaws.com",
+        access_key="YOUR_ACCESS_KEY",
+        secret_key="YOUR_SECRET_KEY",
+        bucket="my-security-footage"
+    ),
+    
+    # Face tracking confirmation
     credence_count=4,
+    
+    # Alerting
     alert_mode=degirum_face.AlertMode.ON_UNKNOWNS,
     alert_once=True,
     clip_duration=100,
     notification_config=degirum_tools.notification_config_console,
-    
-    # Video source
-    video_source=0,  # Webcam
-    
-    # Clip storage
-    clip_storage_config=degirum_tools.ObjectStorageConfig(
-        endpoint="",  # Disabled by default
-        bucket=""
-    ),
     
     # Live streaming
     live_stream_mode="LOCAL",
@@ -193,79 +316,9 @@ config = degirum_face.FaceTrackerConfig(
 tracker = degirum_face.FaceTracker(config)
 ```
 
-### Loading from YAML
-
-Like FaceRecognizer, FaceTracker supports YAML configuration:
-
-```yaml
-# face_tracking.yaml
-
-# Face detection model
-face_detector:
-  hardware: HAILORT/HAILO8
-  inference_host_address: "@cloud"
-  model_zoo_url: degirum/hailo
-
-# Face embedding model
-face_embedder:
-  hardware: HAILORT/HAILO8
-  inference_host_address: "@cloud"
-  model_zoo_url: degirum/hailo
-
-# Database
-db_path: ./face_tracking_db.lance
-cosine_similarity_threshold: 0.6
-
-# Face filters
-face_filters:
-  enable_small_face_filter: true
-  min_face_size: 50
-  enable_frontal_filter: true
-  enable_reid_expiration_filter: true
-  reid_expiration_frames: 30
-
-# Face tracking confirmation
-credence_count: 4
-
-# Alerting and notifications
-alerts:
-  alert_mode: ON_UNKNOWNS
-  alert_once: true
-  clip_duration: 100
-  notification_config: "console://"
-  notification_message: "${time}: Unknown person detected"
-
-# Video source
-video_source: 0
-video_source_fps_override: 0.0
-video_source_resolution_override: [0, 0]
-
-# Clip storage (S3-compatible)
-storage:
-  endpoint: ""  # Empty = disabled
-  access_key: ""
-  secret_key: ""
-  bucket: ""
-  url_expiration_s: 3600
-
-# Live streaming
-live_stream:
-  mode: LOCAL
-  rtsp_url: face_tracking
-```
-
-Load the YAML configuration:
-
-```python
-import degirum_face
-
-config, _ = degirum_face.FaceTrackerConfig.from_yaml(yaml_file="face_tracking.yaml")
-tracker = degirum_face.FaceTracker(config)
-```
-
 ---
 
-## FaceTracker Method
+## FaceTracker Methods
 
 `FaceTracker` has one primary method: `start_face_tracking_pipeline()`.
 
