@@ -73,17 +73,6 @@ See the [FaceRecognizer Configuration Guide](face_recognizer.md#anatomy-of-facer
 
 Input video source and overrides for incorrect camera metadata.
 
-```python
-config = degirum_face.FaceTrackerConfig(
-    # Video input
-    video_source=0,  # Webcam 0, "video.mp4", or "rtsp://..."
-    
-    # Overrides (when camera reports wrong values)
-    video_source_fps_override=30.0,  # Force 30 FPS
-    video_source_resolution_override=(1920, 1080)  # Force 1080p
-)
-```
-
 **Parameters:**
 
 - **`video_source`** - Input video source:
@@ -98,29 +87,6 @@ config = degirum_face.FaceTrackerConfig(
 #### 2. Clip Storage
 
 Configuration for saving video clips to S3-compatible object storage or local filesystem.
-
-```python
-import degirum_tools
-
-# Remote S3 storage
-config = degirum_face.FaceTrackerConfig(
-    clip_storage_config=degirum_tools.ObjectStorageConfig(
-        endpoint="s3.amazonaws.com",  # S3 endpoint
-        access_key="YOUR_ACCESS_KEY",
-        secret_key="YOUR_SECRET_KEY",
-        bucket="face-tracking-clips",
-        url_expiration_s=3600  # Presigned URL expiration (1 hour)
-    )
-)
-
-# Local storage
-config = degirum_face.FaceTrackerConfig(
-    clip_storage_config=degirum_tools.ObjectStorageConfig(
-        endpoint="./clips",  # Local directory path
-        bucket="unknown_faces"  # Subdirectory name
-    )
-)
-```
 
 **Parameters:**
 
@@ -140,12 +106,6 @@ config = degirum_face.FaceTrackerConfig(
 
 Fundamental setting that controls when a detected face is "confirmed" for tracking and subsequent processing.
 
-```python
-config = degirum_face.FaceTrackerConfig(
-    credence_count=4  # Frames required to confirm face
-)
-```
-
 **Parameters:**
 
 - **`credence_count`** - Number of consecutive frames a face must appear before being confirmed as a valid track. Reduces false positives from momentary detections, camera noise, or transient objects. Higher values = more stable tracking but slower confirmation.
@@ -158,22 +118,6 @@ config = degirum_face.FaceTrackerConfig(
 #### 4. Alerting and Notifications
 
 Controls when and how alerts are triggered for confirmed faces, including clip recording and notification delivery.
-
-```python
-config = degirum_face.FaceTrackerConfig(
-    # Alert trigger settings
-    alert_mode=degirum_face.AlertMode.ON_UNKNOWNS,  # When to alert
-    alert_once=True,  # Alert once per track or continuously
-    
-    # Clip recording
-    clip_duration=100,  # Clip length in frames
-    
-    # Notifications
-    notification_config="mailto://user:password@gmail.com",
-    notification_message="${time}: Unknown person detected. Video: ${filename}",
-    notification_timeout_s=10.0
-)
-```
 
 **Parameters:**
 
@@ -196,19 +140,17 @@ config = degirum_face.FaceTrackerConfig(
 - **`notification_timeout_s`** - Timeout in seconds for sending notifications
 
 #### 5. Live Stream Output
+
 Configure live video streaming output.
 
-```python
-config = degirum_face.FaceTrackerConfig(
-    live_stream_mode="WEB",  # Stream to web
-    live_stream_rtsp_url="face_tracking"  # RTSP path suffix
-)
-```
+**Parameters:**
 
-**Modes:**
-- `"LOCAL"` - Display in local window
-- `"WEB"` - Stream via RTSP for web viewing
-- `"NONE"` - No live display
+- **`live_stream_mode`** - Live stream mode:
+  - `"LOCAL"` - Display in local window
+  - `"WEB"` - Stream via RTSP for web viewing
+  - `"NONE"` - No live display
+
+- **`live_stream_rtsp_url`** - RTSP URL path suffix (used when mode is `"WEB"`)
 
 ### Complete Configuration Example
 
