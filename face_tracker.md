@@ -44,8 +44,8 @@ Before using FaceTracker, you should:
 
 ## Table of Contents
 - [Understanding FaceTrackerConfig](#understanding-facetrackerconfig)
-- [YAML Configuration Structure](#yaml-configuration-structure)
 - [Python Configuration Example](#python-configuration-example)
+- [YAML Configuration Structure](#yaml-configuration-structure)
 - [FaceTracker Methods](#facetracker-methods)
 - [ReID Expiration Filter](#reid-expiration-filter)
 - [Complete Example](#complete-example)
@@ -191,6 +191,78 @@ Configure live video streaming output.
 
 ---
 
+## Python Configuration Example
+
+For Python-based configuration (without YAML):
+
+```python
+import degirum_face
+import degirum_tools
+
+config = degirum_face.FaceTrackerConfig(
+    # Face detection model
+    face_detection_model_spec=degirum_face.get_face_detection_model_spec(
+        device_type="HAILORT/HAILO8",
+        inference_host_address="@cloud"
+    ),
+    
+    # Face embedding model
+    face_embedding_model_spec=degirum_face.get_face_embedding_model_spec(
+        device_type="HAILORT/HAILO8",
+        inference_host_address="@cloud"
+    ),
+    
+    # Database settings
+    db_path="./face_tracking_db.lance",
+    cosine_similarity_threshold=0.6,
+    
+    # Face filters
+    face_filters=degirum_face.FaceFilterConfig(
+        enable_small_face_filter=True,
+        min_face_size=50,
+        enable_zone_filter=False,
+        zone=[],  # [[x1,y1], [x2,y2], [x3,y3]] for polygon
+        enable_frontal_filter=True,
+        enable_shift_filter=False,
+        enable_reid_expiration_filter=True,
+        reid_expiration_frames=30
+    ),
+    
+    # Video source settings
+    video_source=0,  # 0 for webcam, RTSP URL, or file path
+    video_source_fps_override=0.0,  # 0 = use source FPS
+    video_source_resolution_override=(0, 0),  # (0, 0) = use source resolution
+    
+    # Clip storage configuration
+    clip_storage_config=degirum_tools.ObjectStorageConfig(
+        endpoint="s3.amazonaws.com",  # Empty string to disable
+        access_key="YOUR_ACCESS_KEY",
+        secret_key="YOUR_SECRET_KEY",
+        bucket="my-security-footage",
+        url_expiration_s=3600
+    ),
+    
+    # Face tracking confirmation
+    credence_count=4,
+    
+    # Alerting and notifications
+    alert_mode=degirum_face.AlertMode.ON_UNKNOWNS,  # NONE, ON_UNKNOWNS, ON_KNOWNS, ON_ALL
+    alert_once=True,
+    clip_duration=100,
+    notification_config="console://",  # Apprise notification URL
+    notification_message="${time}: Unknown person detected. Video: [${filename}](${url})",
+    notification_timeout_s=10,
+    
+    # Live streaming
+    live_stream_mode="LOCAL",  # LOCAL, WEB, or NONE
+    live_stream_rtsp_url="",
+)
+
+tracker = degirum_face.FaceTracker(config)
+```
+
+---
+
 ## YAML Configuration Structure
 
 FaceTracker supports complete configuration via YAML files. Here's the complete structure with all parameter groups:
@@ -263,56 +335,6 @@ live_stream:
 import degirum_face
 
 config, _ = degirum_face.FaceTrackerConfig.from_yaml(yaml_file="face_tracking.yaml")
-tracker = degirum_face.FaceTracker(config)
-```
-
----
-
-## Python Configuration Example
-
-For Python-based configuration (without YAML):
-
-```python
-import degirum_face
-import degirum_tools
-
-config = degirum_face.FaceTrackerConfig(
-    # Inherited FaceRecognizer settings
-    face_detection_model_spec=degirum_face.get_face_detection_model_spec(
-        device_type="HAILORT/HAILO8",
-        inference_host_address="@cloud"
-    ),
-    face_embedding_model_spec=degirum_face.get_face_embedding_model_spec(
-        device_type="HAILORT/HAILO8",
-        inference_host_address="@cloud"
-    ),
-    db_path="./face_tracking_db.lance",
-    cosine_similarity_threshold=0.6,
-    
-    # Video source
-    video_source=0,  # Webcam
-    
-    # Clip storage (S3 example)
-    clip_storage_config=degirum_tools.ObjectStorageConfig(
-        endpoint="s3.amazonaws.com",
-        access_key="YOUR_ACCESS_KEY",
-        secret_key="YOUR_SECRET_KEY",
-        bucket="my-security-footage"
-    ),
-    
-    # Face tracking confirmation
-    credence_count=4,
-    
-    # Alerting
-    alert_mode=degirum_face.AlertMode.ON_UNKNOWNS,
-    alert_once=True,
-    clip_duration=100,
-    notification_config=degirum_tools.notification_config_console,
-    
-    # Live streaming
-    live_stream_mode="LOCAL",
-)
-
 tracker = degirum_face.FaceTracker(config)
 ```
 
@@ -579,7 +601,7 @@ config = degirum_face.FaceTrackerConfig(
     
     # Live display
     live_stream_mode="WEB",
-    live_stream_rtsp_url="security_feed",
+    live_stream_rtsp_url="rtsp://username@password:ip:port",
 )
 
 # Start tracking
@@ -603,9 +625,3 @@ This configuration:
 
 ---
 
-## Next Steps
-
-- **Enroll faces:** Use `FaceRecognizer.enroll_image()` or `enroll_batch()` to populate the database
-- **Examples:** See [examples/face_tracking_simple.py](examples/face_tracking_simple.py) for working code
-- **Web App:** Try the full-featured [face tracking web app](apps/face_tracking_web_app) with UI
-- **Hardware:** Review [hardware selection](face_recognizer.md#choosing-hardware-discovery-and-selection) for optimal performance
