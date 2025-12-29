@@ -35,9 +35,9 @@ def main():
     recognition_results: list = []
     for result in face_recognizer.predict_batch(photos):
         recognition_results.extend(
-            (embedding, result.info)
-            for r in result.results
-            if (embedding := r.get("face_embeddings")) is not None
+            (face.embeddings[0], result.info)
+            for face in result.faces
+            if face.embeddings
         )
 
     if len(recognition_results) == 0:

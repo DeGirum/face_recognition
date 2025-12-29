@@ -47,8 +47,7 @@ def main():
     # find and print all photos with similar faces to the reference image
     print(f"Photos with faces similar to {reference_image_path}:")
     for result in face_recognizer.predict_batch(image_files):
-        for r in result.results:
-            face = degirum_face.FaceRecognitionResult.from_dict(r)
+        for face in result.faces:
             if face.attributes == person_name:
                 print(f"{result.info}: similarity {face.similarity_score:.2f}")
 
