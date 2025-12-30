@@ -18,27 +18,9 @@ import os, io, asyncio, urllib.parse, uuid
 import degirum_face
 from degirum_tools import MediaServer
 
-from typing import List
 from nicegui import ui, app, context
 from fastapi.responses import StreamingResponse, JSONResponse, Response
 from fastapi import Request
-
-
-#
-# Global variables
-#
-
-# media server instance for RTSP streaming
-media_server: MediaServer = None  # type: ignore
-
-# configuration of face tracking pipeline
-config: degirum_face.FaceTrackerConfig = None  # type: ignore
-
-# clip manager instance for annotating video clips
-clip_manager: degirum_face.FaceClipManager = None  # type: ignore
-
-# list of pipelines running face tracking and their watchdogs
-pipelines: List[tuple] = []
 
 
 @app.on_startup
@@ -46,47 +28,43 @@ def startup():
     """Initialize the face tracking application on startup."""
 
     # load settings from YAML file
-    global config
-    config, _ = degirum_face.FaceTrackerConfig.from_yaml(yaml_file="config.yaml")
-    config.live_stream_mode = "WEB"
-
-    # create FaceTracker instance
-    face_tracker = degirum_face.FaceTracker(config)
+    app.state.config, _ = degirum_face.FaceTrackerConfig.from_yaml(
+        yaml_file="config.yaml"
+    )
+    app.state.config.live_stream_mode = "WEB"
 
     # start face tracking pipeline
-    pipelines.append(face_tracker.start_face_tracking_pipeline())
-
-    # create clip manager
-    global clip_manager
-    clip_manager = degirum_face.FaceClipManager(config)
+    app.state.pipelines = []
+    app.state.pipelines.append(
+        degirum_face.FaceTracker(app.state.config).start_face_tracking_pipeline()
+    )
 
     # start media server for RTSP streaming
-    global media_server
-    media_server = MediaServer()
+    app.state.media_server = MediaServer()
 
 
 @app.on_shutdown
 def cleanup():
     """Cleanup function to stop the media server and pipelines."""
 
-    for composition, _ in pipelines:
+    for composition, _ in app.state.pipelines:
         composition.stop()
 
-    media_server.stop()  # stop the media server
+    app.state.media_server.stop()  # stop the media server
 
 
 @ui.page("/health")
 def health_check():
     """Health check endpoint."""
 
-    if not pipelines:
+    if not app.state.pipelines:
         return JSONResponse(status_code=500, content={"status": "No pipelines running"})
 
     status = "ok"
     pipeline_states = []
     status_code = 200
 
-    for i, (_, watchdog) in enumerate(pipelines):
+    for i, (_, watchdog) in enumerate(app.state.pipelines):
         running, fps = watchdog.check()
         pipeline_states.append(
             {
@@ -130,9 +108,11 @@ def main_page():
     VIEW_CONFIGURATION = "Configuration"
     VIEW_LIVE_STREAM = "Live Stream"
 
-    face_map = degirum_face.ObjectMap()
+    face_tracker = degirum_face.FaceTracker(app.state.config)
+    clip_manager = degirum_face.FaceClipManager(app.state.config.clip_storage_config)
     clips = clip_manager.list_clips()
-    known_objects = clip_manager.db.list_objects()
+    known_objects = face_tracker.db.list_objects()
+    face_map: dict = {}
 
     # Track current view selection
     current_view = {"selection": VIEW_CONFIGURATION}
@@ -175,7 +155,7 @@ def main_page():
         for f in selected_filenames:
             clip = clips.get(f.replace(".mp4", ""), {})
             for v in clip.values():
-                clip_manager.remove_clip(v.object_name)
+                clip_manager.remove_file(v.object_name)
 
         refresh_clips()
 
@@ -248,10 +228,10 @@ def main_page():
 
             nonlocal face_map
             face_map = await asyncio.to_thread(
-                clip_manager.find_faces_in_clip, filename
+                face_tracker.find_faces_in_clip, filename
             )
 
-            annotation_label.text = f"{filename}: {len(face_map.map)} face(s) detected"
+            annotation_label.text = f"{filename}: {len(face_map)} face(s) detected"
 
             annotated_filename = (
                 file_stem
@@ -262,8 +242,8 @@ def main_page():
             video_player.source = clip_url
 
             ann_rows = [
-                {"id": face.track_id, "attributes": face.attributes or ""}
-                for face in face_map.map.values()
+                {"id": track_id, "attributes": face.attributes or ""}
+                for track_id, face in face_map.items()
             ]
 
             ann_grid.options["rowData"] = ann_rows
@@ -286,19 +266,15 @@ def main_page():
                 continue  # Skip empty attributes
 
             face = face_map.get(track_id)
-            if face is None:
-                continue
+            if not face:
+                continue  # Skip unknown track IDs
 
-            # find the object ID in the known objects list
-            obj_id = next(
-                (id for id, a in known_objects.items() if str(a) == str(attr)), None
-            )
-            if obj_id is None:
-                continue
-
-            # add embeddings
-            clip_manager.db.add_embeddings(obj_id, face.embeddings, dedup=True)
+            # update face attributes
+            face.attributes = attr
             msg += f"{attr}: {len(face.embeddings)} embeddings\n"
+
+        # enroll embeddings
+        face_tracker.enroll(face_map.values())
 
         ui.notify("Database updated:\n" + msg, multi_line=True)
 
@@ -311,7 +287,7 @@ def main_page():
             else:
                 obj_id = str(uuid.uuid4())
                 known_objects[obj_id] = attr
-                clip_manager.db.add_object(obj_id, attr)
+                face_tracker.db.add_object(obj_id, attr)
                 ann_grid.options["columnDefs"][1]["cellEditorParams"] = {
                     "values": sorted_known_objects()
                 }
@@ -323,7 +299,7 @@ def main_page():
         """Open the dialog showing the embeddings DB info."""
 
         counts = sorted(
-            clip_manager.db.count_embeddings().values(), key=lambda x: str(x[1])
+            face_tracker.db.count_embeddings().values(), key=lambda x: str(x[1])
         )
         rows = [
             {
@@ -584,7 +560,7 @@ def main_page():
 
                         assert context.client.request
                         host = context.client.request.headers.get("host", "localhost")
-                        stream_url = f"http://{host.split(':')[0]}:8888/{config.live_stream_rtsp_url}"
+                        stream_url = f"http://{host.split(':')[0]}:8888/{app.state.config.live_stream_rtsp_url}"
                         ui.element("iframe").props(f'src="{stream_url}"').classes(
                             "w-full h-[calc(100vh-12rem)]"
                         )
@@ -601,7 +577,9 @@ def stream_page():
 
     assert context.client.request
     host = context.client.request.headers.get("host", "localhost")
-    stream_url = f"http://{host.split(':')[0]}:8888/{config.live_stream_rtsp_url}"
+    stream_url = (
+        f"http://{host.split(':')[0]}:8888/{app.state.config.live_stream_rtsp_url}"
+    )
     ui.label("Live Stream").classes("text-xl font-bold mb-4")
     ui.element("iframe").props(f'src="{stream_url}"').classes(
         "w-[90%] mx-auto h-[calc(90vh)]"
@@ -616,7 +594,8 @@ async def serve_video(request: Request, filename: str):
     filename = urllib.parse.unquote(filename)
 
     # Download full video into memory (later we can optimize this)
-    video_bytes = clip_manager.download_clip(filename)
+    clip_manager = degirum_face.FaceClipManager(app.state.config.clip_storage_config)
+    video_bytes = clip_manager.download_file(filename)
     file_size = len(video_bytes)
 
     # Extract Range header (e.g. 'bytes=0-')
