@@ -36,8 +36,8 @@ def main():
     # recognize faces iterating over command line arguments
     for result in face_recognition.predict_batch(iter(sys.argv[1:])):
         print(f"\nResults for {result.info}:")
-        for face in result.results:
-            print(degirum_face.FaceRecognitionResult.from_dict(face))
+        for face in result.faces:
+            print(face)
 
 
 if __name__ == "__main__":
