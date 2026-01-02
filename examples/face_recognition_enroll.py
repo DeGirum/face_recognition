@@ -40,10 +40,12 @@ def main():
 
     else:
         # recognize faces iterating over command line arguments
-        embeddings = face_recognizer.enroll_batch(
+        enrolled = face_recognizer.enroll_batch(
             iter(sys.argv[1::2]), iter(sys.argv[2::2])
         )
-        print(f"Enrolled {len(embeddings)} faces")
+        print(f"Enrolled {len(enrolled)} face(s):\n")
+        for face in enrolled:
+            print(face, "\n")
 
 
 if __name__ == "__main__":

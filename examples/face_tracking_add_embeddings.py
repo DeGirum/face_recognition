@@ -26,12 +26,13 @@ import degirum_face, sys, os
 
 def main():
     # load settings from YAML file
-    config, _ = degirum_face.FaceClipManagerConfig.from_yaml(
-        yaml_file="face_tracking.yaml"
-    )
+    config, _ = degirum_face.FaceTrackerConfig.from_yaml(yaml_file="face_tracking.yaml")
 
     # create clip manager instance
-    clip_manager = degirum_face.FaceClipManager(config)
+    clip_manager = degirum_face.FaceClipManager(config.clip_storage_config)
+
+    # create face tracker instance
+    face_tracker = degirum_face.FaceTracker(config)
 
     # check command line arguments
     if len(sys.argv) != 3:
@@ -41,7 +42,7 @@ def main():
             if "original" in clip_info:
                 print(f"  {clip_info['original'].object_name}")
         print("Person names currently in database:")
-        for person in clip_manager.db.list_objects().values():
+        for person in face_tracker.db.list_objects().values():
             print(f"  {person}")
         sys.exit(1)
 
@@ -50,22 +51,22 @@ def main():
 
     # run analysis pipeline on the video file
     print(f"Processing video file: {video_file}")
-    face_map = clip_manager.find_faces_in_clip(video_file, save_annotated=False)
+    face_map = face_tracker.find_faces_in_clip(video_file, save_annotated=False)
 
-    if len(face_map.map) != 1:
+    if len(face_map) != 1:
         print(
-            f"Error: {len(face_map.map)} faces detected. This example assumes exactly one person."
+            f"Error: {len(face_map)} faces detected. This example assumes exactly one person."
         )
         sys.exit(1)
 
-    face_obj = next(iter(face_map.map.values()))
-
     # add embeddings to the database
-    cnt, obj_id = clip_manager.db.add_embeddings_for_attributes(
-        person_name, face_obj.embeddings
-    )
+    for face_obj in face_map.values():
+        face_obj.attributes = person_name
+        face_tracker.enroll(face_obj)
+
+    # print database contents
     print(
-        f"Successfully added {cnt} embeddings for '{person_name}' (object ID = {obj_id}) to the database."
+        f"{person_name} is enrolled.\n\nPersons currently in database:\n{face_tracker.db.count_embeddings()}"
     )
 
 
