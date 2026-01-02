@@ -76,20 +76,30 @@ for face in result.faces:
 
 See [examples/](examples) for all available examples.
 
-## Advanced Topics
+## Documentation
 
-For production deployments, hardware optimization, and advanced features, see the [Advanced Usage Guide](face_recognizer.md):
+Complete documentation is in the [`docs/`](docs/) folder:
 
-- **Understanding the Defaults** - What the quickstart actually does behind the scenes
-- **Configuration Anatomy** - The 5 components of FaceRecognizerConfig
-- **FaceRecognizer Methods** - enroll_image(), enroll_batch(), predict(), predict_batch()
-- **Deployment Options** - Cloud (@cloud), local (@local), or remote AI server
-- **Hardware Selection** - 12+ accelerator platforms (Hailo, Intel NPU, NVIDIA GPU, etc.)
-- **YAML Configuration** - Clean, version-controlled config files for production
-- **Face Filtering** - Quality gates (small face, frontal, zone, shift filters)
+### FaceRecognizer (Image/Batch Processing)
+- **[FaceRecognizer Guide](docs/face_recognizer.md)** - Complete guide for image and batch processing
+  - Understanding the defaults
+  - Configuration anatomy
+  - Methods (enroll, predict, batch processing)
+  - Deployment options (cloud, local, remote)
+  - Hardware selection (12+ accelerator platforms)
+  - YAML configuration
+  - Face filtering
 
-Quick links:
-- [face_recognizer.md](face_recognizer.md) - Complete FaceRecognizer guide
+### FaceTracker (Video Surveillance)
+- **[Quick Start](docs/face_tracker_quickstart.md)** - Get started with video tracking quickly
+- **[Configuration Reference](docs/face_tracker_config.md)** - All configuration options
+- **[Methods Guide](docs/face_tracker_methods.md)** - All methods with workflows and examples
+
+### Additional Guides
+- **[FaceClipManager](docs/face_clip_manager.md)** - Manage video clips in object storage
+- **[Documentation Index](docs/README.md)** - Complete documentation index with quick navigation
+
+### Examples
 - [examples/](examples) - Ready-to-run code samples
 
 ## License
