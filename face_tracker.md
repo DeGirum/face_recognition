@@ -2,22 +2,29 @@
 
 ## Overview
 
-`FaceTracker` is designed for **continuous video monitoring** applications where you need to:
+`FaceTracker` extends `FaceRecognizer` for **production video surveillance applications**. While `FaceRecognizer` excels at processing individual images independently, `FaceTracker` adds critical capabilities for real-world monitoring systems:
 
-- **Monitor live camera feeds** - Detect and identify faces in real-time from webcams, IP cameras, or RTSP streams
-- **Track individuals across frames** - Maintain persistent identity as people move through the scene
-- **Receive automated alerts** - Get notified when unknown persons appear or when specific individuals are detected
-- **Record evidence clips** - Automatically save video clips when alert conditions are met
-- **Stream annotated video** - Display or broadcast live video with face annotations and identity labels
+### Key Differences from FaceRecognizer
 
-**Real-world scenarios:**
-- **Access control**: Alert when unauthorized persons approach secured areas
-- **Security monitoring**: Track unknown individuals entering restricted zones
-- **Attendance systems**: Identify and log known employees/students entering facilities
-- **Customer analytics**: Count and track unique visitors in retail environments
-- **Safety compliance**: Monitor for presence/absence of required personnel
+| Capability | FaceRecognizer | FaceTracker |
+|------------|----------------|-------------|
+| **Identity persistence** | Each frame processed separately | Stable track IDs across frames |
+| **Embedding extraction** | Every frame (redundant) | Adaptive backoff (10-20x reduction) |
+| **Alerting** | Manual implementation required | Built-in modes with credence thresholds |
+| **Video evidence** | Not supported | Automatic clip recording to S3/local |
+| **Notifications** | Not supported | Integrated Apprise (email, Slack, SMS) |
+| **Live streaming** | Not supported | Local display or RTSP web streaming |
+| **Video post-processing** | Not supported | Extract and enroll faces from clips |
 
-Unlike `FaceRecognizer` which processes individual images or batches independently, `FaceTracker` maintains **temporal continuity** - tracking the same face across hundreds of frames, triggering alerts only when confidence thresholds are met, and optimizing compute by skipping redundant processing for tracked faces.
+### Production Features
+
+- **Persistent tracking** - Follow individuals across frames, even through occlusions
+- **Smart alerting** - Trigger on unknown/known persons after N-frame confirmation (reduces false positives)
+- **Automated recording** - Save evidence clips when alerts fire
+- **Real-time monitoring** - Stream annotated video locally or via RTSP
+- **Compute efficiency** - Adaptive re-identification extracts embeddings every 30 frames instead of every frame
+
+**Use cases:** Access control and security monitoring, attendance tracking, customer analytics, post-processing surveillance footage for enrollment.
 
 ## Prerequisites
 
@@ -86,7 +93,48 @@ Input video source and overrides for incorrect camera metadata.
 
 - **`video_source_resolution_override`** - Override resolution as `(width, height)` tuple when camera reports incorrect dimensions (default: (0, 0) = no override)
 
-#### 2. Clip Storage
+#### 2. Face Tracking Confirmation
+
+Fundamental setting that controls when a detected face is "confirmed" for tracking and subsequent processing.
+
+**Parameters:**
+
+- **`credence_count`** - Number of consecutive frames a face must appear before being confirmed as a valid track. Reduces false positives from momentary detections, camera noise, or transient objects. Higher values = more stable tracking but slower confirmation.
+
+**Recommended values:**
+- `2-4` - Real-time monitoring (quick confirmation)
+- `5-10` - High-traffic areas (reduce false positives)
+- `10+` - Critical security applications (maximum stability)
+
+#### 3. Alerting and Notifications
+
+Controls when and how alerts are triggered for confirmed faces, including notification delivery.
+
+**Note:** Clip recording (see next section) only occurs when `alert_mode` is not `NONE`. Alerts trigger the video clip saving mechanism.
+
+**Parameters:**
+
+- **`alert_mode`** - Controls when alerts are triggered:
+  - `AlertMode.NONE` - No alerts
+  - `AlertMode.ON_UNKNOWNS` - Alert when unknown face detected
+  - `AlertMode.ON_KNOWNS` - Alert when known face detected
+  - `AlertMode.ON_ALL` - Alert for all faces (known and unknown)
+
+- **`alert_once`** - Whether to trigger alert only once per track or continuously:
+  - `True` - Security/access control (one alert per person entry)
+  - `False` - Continuous monitoring applications
+
+- **`clip_duration`** - Length of video clips to save (in frames). Example: At 30 FPS, 100 frames = ~3.3 seconds of video.
+
+- **`notification_config`** - Apprise configuration string for notification delivery (email, Slack, etc.)
+
+- **`notification_message`** - Message template with variables: `${time}`, `${filename}`, `${url}`
+
+- **`notification_timeout_s`** - Timeout in seconds for sending notifications
+
+#### 4. Clip Storage
+
+**Important:** Clip storage only works when `alert_mode` is not `NONE`. Video clips are automatically saved when alerts are triggered.
 
 Configuration for saving video clips to S3-compatible object storage or local filesystem.
 
@@ -102,7 +150,8 @@ config = degirum_face.FaceTrackerConfig(
     clip_storage_config=degirum_tools.ObjectStorageConfig(
         endpoint="./clips",        # Local directory path
         bucket="unknown_faces"      # Subdirectory name
-    )
+    ),
+    alert_mode=degirum_face.AlertMode.ON_UNKNOWNS  # Required for clip saving
 )
 
 # S3-compatible cloud storage
@@ -113,7 +162,8 @@ config = degirum_face.FaceTrackerConfig(
         secret_key="YOUR_SECRET_KEY",
         bucket="face-tracking-clips",
         url_expiration_s=3600       # Optional: presigned URL expiration
-    )
+    ),
+    alert_mode=degirum_face.AlertMode.ON_UNKNOWNS  # Required for clip saving
 )
 
 # Disabled (default)
@@ -139,42 +189,10 @@ config = degirum_face.FaceTrackerConfig(
 
 **Storage disabled:** Leave `endpoint` or `bucket` empty to disable clip storage entirely.
 
-#### 3. Face Tracking Confirmation
-
-Fundamental setting that controls when a detected face is "confirmed" for tracking and subsequent processing.
-
-**Parameters:**
-
-- **`credence_count`** - Number of consecutive frames a face must appear before being confirmed as a valid track. Reduces false positives from momentary detections, camera noise, or transient objects. Higher values = more stable tracking but slower confirmation.
-
-**Recommended values:**
-- `2-4` - Real-time monitoring (quick confirmation)
-- `5-10` - High-traffic areas (reduce false positives)
-- `10+` - Critical security applications (maximum stability)
-
-#### 4. Alerting and Notifications
-
-Controls when and how alerts are triggered for confirmed faces, including clip recording and notification delivery.
-
-**Parameters:**
-
-- **`alert_mode`** - Controls when alerts are triggered:
-  - `AlertMode.NONE` - No alerts
-  - `AlertMode.ON_UNKNOWNS` - Alert when unknown face detected
-  - `AlertMode.ON_KNOWNS` - Alert when known face detected
-  - `AlertMode.ON_ALL` - Alert for all faces (known and unknown)
-
-- **`alert_once`** - Whether to trigger alert only once per track or continuously:
-  - `True` - Security/access control (one alert per person entry)
-  - `False` - Continuous monitoring applications
-
-- **`clip_duration`** - Length of video clips to save (in frames). Example: At 30 FPS, 100 frames = ~3.3 seconds of video.
-
-- **`notification_config`** - Apprise configuration string for notification delivery (email, Slack, etc.)
-
-- **`notification_message`** - Message template with variables: `${time}`, `${filename}`, `${url}`
-
-- **`notification_timeout_s`** - Timeout in seconds for sending notifications
+**Clip saving behavior:**
+- Clips are saved only when alerts are triggered (based on `alert_mode`)
+- Clip length is controlled by `clip_duration` parameter (in frames)
+- Each clip filename includes timestamp and trigger information
 
 #### 5. Live Stream Output
 
@@ -342,7 +360,13 @@ tracker = degirum_face.FaceTracker(config)
 
 ## FaceTracker Methods
 
-`FaceTracker` has one primary method: `start_face_tracking_pipeline()`.
+`FaceTracker` provides multiple methods for different video processing workflows:
+
+- **`start_face_tracking_pipeline()`** - Run continuous real-time video monitoring with alerting
+- **`predict_batch()`** - Process video streams and return recognition results frame-by-frame
+- **`find_faces_in_file()`** - Analyze local video files to extract and track all faces
+- **`find_faces_in_clip()`** - Analyze video clips from object storage (S3 or local)
+- **`enroll()`** - Add face embeddings to the database for future recognition
 
 ### start_face_tracking_pipeline()
 
@@ -352,13 +376,17 @@ Starts the face tracking pipeline for continuous video processing.
 ```python
 start_face_tracking_pipeline(
     frame_iterator: Optional[Iterable] = None,
-    sink: Optional[SinkGizmo] = None
+    sink: Optional[SinkGizmo] = None,
+    sink_connection_point: str = "detector"
 ) -> Tuple[Composition, Watchdog]
 ```
 
 **Parameters:**
 - `frame_iterator` (Optional) - Custom frame source; if None, uses `config.video_source`
 - `sink` (Optional) - Custom output sink for results
+- `sink_connection_point` (str) - Where to attach the sink in the pipeline:
+  - `"detector"` - After face detection (default)
+  - `"recognizer"` - After face recognition and embedding extraction
 
 **Returns:**
 - `Composition` - Pipeline composition object (call `.wait()` to run)
@@ -451,6 +479,225 @@ The face tracking pipeline performs these steps for each frame:
 11. **Live Streaming** - Output annotated video to display/RTSP
 
 **Key advantage:** Track IDs persist across frames, reducing redundant embedding calculations via the ReID expiration filter.
+
+### predict_batch()
+
+Recognize faces in a video stream, returning inference results for each frame.
+
+**Signature:**
+```python
+predict_batch(stream: Iterable) -> Iterator[dg.postprocessor.InferenceResults]
+```
+
+**Parameters:**
+- `stream` - Iterator yielding video frames as numpy arrays
+
+**Returns:**
+- Iterator of `InferenceResults` objects with face detection and recognition data. Each result contains:
+  - `"face_embeddings"` - Face embedding vector
+  - `"face_db_id"` - Database ID of recognized face
+  - `"face_attributes"` - Recognized face attributes (e.g., person name)
+  - `"face_similarity_score"` - Similarity score from database search
+  - `"frame_id"` - Input frame ID
+  - `faces` property - List of `FaceRecognitionResult` objects
+
+**Example:**
+
+```python
+import degirum_face
+import cv2
+
+def frame_generator():
+    cap = cv2.VideoCapture("video.mp4")
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        yield frame
+    cap.release()
+
+config = degirum_face.FaceTrackerConfig(
+    db_path="./face_db.lance",
+)
+
+tracker = degirum_face.FaceTracker(config)
+
+# Process video stream and get results
+for result in tracker.predict_batch(frame_generator()):
+    print(f"Frame: {result._frame_info}")
+    for face in result.faces:
+        print(f"  Face: {face.attributes}, Score: {face.similarity_score}")
+```
+
+### find_faces_in_file()
+
+Analyze a local video file to find and track all faces, optionally creating an annotated output video.
+
+**Signature:**
+```python
+find_faces_in_file(
+    file_path: str,
+    save_annotated: bool = True,
+    output_video_path: Optional[str] = None,
+    compute_clusters: bool = True
+) -> Dict[int, FaceAttributes]
+```
+
+**Parameters:**
+- `file_path` (str) - Path to the input video file
+- `save_annotated` (bool) - Whether to save an annotated video (default: True)
+- `output_video_path` (Optional[str]) - Path for the annotated output video
+- `compute_clusters` (bool) - Whether to compute K-means clustering on embeddings (default: True)
+
+**Returns:**
+- `Dict[int, FaceAttributes]` - Dictionary mapping track IDs to face data:
+  - Each `FaceAttributes` object contains embeddings and attributes (if recognized)
+  - Track IDs are persistent across frames
+  - Embeddings are clustered if `compute_clusters=True`
+
+**Use cases:**
+- Analyze recorded footage to identify all individuals
+- Extract face embeddings from video for enrollment
+- Create annotated videos for review
+- Cluster similar face appearances across frames
+
+**Example:**
+
+```python
+import degirum_face
+
+config = degirum_face.FaceTrackerConfig(
+    db_path="./face_db.lance",
+)
+
+tracker = degirum_face.FaceTracker(config)
+
+# Analyze video and create annotated output
+faces = tracker.find_faces_in_file(
+    file_path="surveillance_footage.mp4",
+    save_annotated=True,
+    output_video_path="annotated_footage.mp4"
+)
+
+# Review found faces
+for track_id, face_data in faces.items():
+    print(f"Track {track_id}: {face_data.attributes}")
+    print(f"  Embeddings: {len(face_data.embeddings)} samples")
+
+# Enroll unknown faces
+for track_id, face_data in faces.items():
+    if face_data.attributes is None:
+        # Assign identity to unknown face
+        face_data.attributes = input(f"Who is track {track_id}? ")
+        tracker.enroll(face_data)
+```
+
+### find_faces_in_clip()
+
+Analyze a video clip from object storage (S3 or local), similar to `find_faces_in_file()` but for cloud/storage-based clips.
+
+**Signature:**
+```python
+find_faces_in_clip(
+    clip_object_name: str,
+    save_annotated: bool = True,
+    compute_clusters: bool = True
+) -> Dict[int, FaceAttributes]
+```
+
+**Parameters:**
+- `clip_object_name` (str) - Name of the video clip in object storage
+- `save_annotated` (bool) - Whether to save annotated video back to storage (default: True)
+- `compute_clusters` (bool) - Whether to compute K-means clustering on embeddings (default: True)
+
+**Returns:**
+- `Dict[int, FaceAttributes]` - Dictionary mapping track IDs to face data (same as `find_faces_in_file()`)
+
+**Requirements:**
+- `clip_storage_config` must be configured in `FaceTrackerConfig`
+
+**Example:**
+
+```python
+import degirum_face
+import degirum_tools
+
+config = degirum_face.FaceTrackerConfig(
+    db_path="./face_db.lance",
+    clip_storage_config=degirum_tools.ObjectStorageConfig(
+        endpoint="s3.amazonaws.com",
+        access_key="YOUR_KEY",
+        secret_key="YOUR_SECRET",
+        bucket="security-clips"
+    )
+)
+
+tracker = degirum_face.FaceTracker(config)
+
+# Analyze clip from storage
+faces = tracker.find_faces_in_clip(
+    clip_object_name="2026-01-02_unknown_person.mp4",
+    save_annotated=True
+)
+
+print(f"Found {len(faces)} unique individuals in clip")
+```
+
+**Note:** The annotated video is saved with `_annotated` suffix (e.g., `clip_annotated.mp4`) in the same storage location.
+
+### enroll()
+
+Enroll face(s) into the database using embeddings extracted from video analysis.
+
+**Signature:**
+```python
+enroll(face_list: Union[FaceAttributes, List[FaceAttributes]])
+```
+
+**Parameters:**
+- `face_list` - Single `FaceAttributes` object or list of objects to enroll
+  - Must have `attributes` property set (e.g., person name)
+  - Must contain `embeddings` (populated by `find_faces_in_file()` or `find_faces_in_clip()`)
+
+**Workflow:**
+1. Run `find_faces_in_file()` or `find_faces_in_clip()` to extract faces
+2. Assign `attributes` (person name) to each face you want to enroll
+3. Call `enroll()` with the face data
+
+**Example:**
+
+```python
+import degirum_face
+
+config = degirum_face.FaceTrackerConfig(
+    db_path="./face_db.lance",
+)
+
+tracker = degirum_face.FaceTracker(config)
+
+# Extract faces from enrollment video
+faces = tracker.find_faces_in_file(
+    "enrollment_john.mp4",
+    save_annotated=False
+)
+
+# Assign identity and enroll
+for track_id, face_data in faces.items():
+    face_data.attributes = "John Smith"
+    tracker.enroll(face_data)
+    print(f"Enrolled track {track_id} as John Smith")
+
+# Or enroll multiple people at once
+face_list = list(faces.values())
+face_list[0].attributes = "Alice Jones"
+face_list[1].attributes = "Bob Wilson"
+tracker.enroll(face_list)
+```
+
+**Notes:**
+- Faces without `attributes` are skipped with a warning
+- Each face can have multiple embeddings (from different frames/angles)
+- K-means clustering reduces embeddings to representative samples
 
 ---
 
