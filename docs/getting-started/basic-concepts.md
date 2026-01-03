@@ -1,6 +1,6 @@
 # Basic Concepts
 
-Understanding these core concepts will help you work effectively with `degirum-face`.
+Core concepts to understand when working with `degirum-face`.
 
 ## Face Recognition vs. Face Tracking
 
@@ -12,256 +12,127 @@ Understanding these core concepts will help you work effectively with `degirum-f
 | **Temporal Awareness** | None (each image is independent) | Tracks faces across frames |
 | **Real-Time Events** | No | Yes (alerts, streaming) |
 | **Primary Methods** | `predict()`, `predict_batch()`, `enroll_image()` | `start_face_tracking_pipeline()`, `find_faces_in_file()` |
-| **Best For** | Photo albums, batch processing, simple recognition | Surveillance, video analysis, NVR systems |
+| **Best For** | Photo albums, batch processing | Surveillance, video analysis |
 
 **When to use FaceRecognizer:**
 - Processing photos or image collections
 - One-time batch recognition
 - Building a face database from images
-- Simple recognize-and-done workflows
 
 **When to use FaceTracker:**
 - Live camera feeds or video files
 - Tracking the same person across frames
-- Real-time alerts on face confirmation
-- Clip extraction for detected faces
-- Video surveillance applications
+- Real-time alerts and clip extraction
 
 ## Face Recognition Pipeline
 
 Every face recognition operation goes through these stages:
 
 ```
-┌─────────────┐     ┌──────────┐     ┌───────────┐     ┌──────────────┐
-│ Input Image │ ──> │  Detect  │ ──> │   Align   │ ──> │   Embedding  │
-│             │     │  Faces   │     │ & Extract │     │  Extraction  │
-└─────────────┘     └──────────┘     └───────────┘     └──────────────┘
-                                                                │
-                                                                v
-                                                        ┌──────────────┐
-                                                        │   Database   │
-                                                        │   Search &   │
-                                                        │    Match     │
-                                                        └──────────────┘
+┌─────────────┐     ┌──────────────────┐     ┌──────────────┐     ┌──────────────┐
+│ Input Image │ ──> │ Face Detection + │ ──> │   Align &    │ ──> │   Embedding  │
+│             │     │    Landmarks     │     │   Extract    │     │  Extraction  │
+└─────────────┘     └──────────────────┘     └──────────────┘     └──────────────┘
+                                                                            │
+                                                                            v
+                                                                    ┌──────────────┐
+                                                                    │   Database   │
+                                                                    │   Search &   │
+                                                                    │    Match     │
+                                                                    └──────────────┘
 ```
 
-### 1. Face Detection
-Locates faces in the image and returns bounding boxes.
+### 1. Face Detection + Landmarks
+Locates faces in the image and detects 5 facial keypoints (eyes, nose, mouth corners) in a single pass.
 
-**Model:** YOLOv8-based detector  
-**Output:** Bounding box coordinates (x, y, width, height)
+**Output:** Bounding box coordinates + 5 landmark points per face
 
-### 2. Landmark Detection & Alignment
-Finds facial keypoints (eyes, nose, mouth) and aligns the face to a standard pose.
+### 2. Alignment & Extraction
+Aligns each detected face to a standard pose using the landmarks, then extracts a normalized face crop.
 
-**Model:** MobileFaceNet-based landmark detector  
-**Output:** 5 facial landmarks, aligned 112×112 face crop
+**Output:** Aligned face image (typically 112×112 pixels)
 
 ### 3. Embedding Extraction
-Converts the aligned face into a numerical vector (embedding) that captures facial features.
+Converts the aligned face into a numerical vector (embedding) that captures unique facial features.
 
-**Model:** ArcFace ResNet100  
-**Output:** 512-dimensional embedding vector
+**Output:** Embedding vector (typically 512 dimensions)
 
 ### 4. Database Search & Matching
 Compares the embedding against enrolled faces using cosine similarity.
 
 **Database:** LanceDB (vector database)  
-**Output:** Identity + confidence score
+**Output:** Identity + similarity score
 
-## Key Configuration Parameters
+## Model Registry
 
-### Similarity Threshold
+`degirum-face` includes a curated **model registry** - a collection of pre-optimized face detection and embedding models for various hardware platforms. The registry automatically selects the best model for your chosen hardware, so you don't need to manually pick models or tune parameters.
 
-Controls how strict matching is:
+Helper functions like `get_face_detection_model_spec()` and `get_face_embedding_model_spec()` query this registry to get optimized models for your hardware. For complete control, you can also provide custom models outside the registry.
 
-```python
-config = degirum_face.FaceRecognizerConfig(
-    similarity_threshold=0.50  # Default: 50% similarity required
-)
-```
+## Face Recognition Results
 
-- **Higher threshold (0.60-0.80):** Stricter matching, fewer false positives
-- **Lower threshold (0.30-0.50):** More lenient matching, may accept similar-looking people
-- **Recommended:** Start with 0.50, adjust based on your accuracy needs
-
-### Face Database Path
-
-Where enrolled faces are stored:
-
-```python
-config = degirum_face.FaceRecognizerConfig(
-    face_database_path="./my_faces.lance"
-)
-```
-
-The database is a LanceDB vector store containing:
-- Face embeddings (512-D vectors)
-- Person identities (names/IDs)
-- Metadata (enrollment timestamps, etc.)
-
-### Model Selection
-
-Choose models based on your hardware:
-
-```python
-config = degirum_face.FaceRecognizerConfig(
-    face_detection_model_spec=degirum_face.get_face_detection_model_spec(
-        device_type="HAILORT/HAILO8",  # Your hardware accelerator
-        inference_host_address="@local"  # Or "@cloud" for cloud inference
-    )
-)
-```
-
-See [Hardware & Deployment](../guides/face-recognizer/deployment.md) for device types.
-
-## Face Records
-
-All face results are returned as `FaceRecognitionResult` objects:
+Results are returned as `FaceRecognitionResult` objects containing detected faces with their identities and metadata:
 
 ```python
 result = face_recognizer.predict("photo.jpg")
 
 for face in result.faces:
-    print(f"Person: {face.attributes}")             # Person's name or None
-    print(f"Confidence: {face.similarity_score}")   # Similarity score (0.0-1.0)
-    print(f"Bounding Box: {face.bbox}")             # [x1, y1, x2, y2]
-    print(f"Embedding: {face.embeddings}")          # 512-D vector
-    print(f"Database ID: {face.db_id}")             # DB ID if matched
-    print(f"Detection: {face.detection_score}")     # Detection confidence
+    if face.attributes:
+        print(f"Known: {face.attributes} (confidence: {face.similarity_score:.2f})")
+    else:
+        print("Unknown person")
 ```
 
-### Identity Assignment
+**Key properties:**
+- `attributes` - Person's name (or `None` if unknown)
+- `similarity_score` - Match confidence (0.0-1.0)
+- `bbox` - Face bounding box
+- `images` - Cropped face images (numpy arrays)
 
-- **Known face:** `attributes` contains the enrolled person's name
-- **Unknown face:** `attributes` is `None`
-- **Confidence:** Higher `similarity_score` = more similar to enrolled face (max 1.0)
+See [Methods Reference](../guides/face-recognizer/methods.md#predict) for complete property list and detailed usage examples.
 
-## Face Tracking Concepts
+## Deployment & Hardware
 
-### Confirmation Types
+### Inference Location (inference_host_address)
 
-FaceTracker uses confirmation logic to reduce false alarms:
+The `inference_host_address` parameter controls where your models run:
 
-```yaml
-confirmation_type: "consecutive"  # or "cumulative"
-confirmation_frames: 3
-```
+| Option | Use Case | Best For |
+|--------|----------|----------|
+| **Cloud (`@cloud`)** | Experimentation | Try any hardware without local setup |
+| **Local (`@local`)** | Production | Lowest latency, full privacy, offline |
+| **AI Server** | Centralized | Shared GPU/accelerator resources on your network |
 
-- **consecutive:** Face must appear in N frames in a row
-- **cumulative:** Face must appear in N total frames (can be non-consecutive)
 
-### Alerting
+**Cloud** runs models on DeGirum's servers, **Local** runs on your machine, and **AI Server** runs on a dedicated inference server you set up. See [AI Server Setup Guide](https://docs.degirum.com/pysdk/user-guide-pysdk/setting-up-an-ai-server) for server deployment.
 
-Trigger actions when a face is confirmed:
+### Hardware Accelerators (device_type)
 
-```yaml
-alerting_enabled: true
-alerting_mode: "all"  # Alert for every person
-```
+Works on CPU, GPU, and a wide range of edge AI accelerators. The `device_type` parameter specifies which hardware to use:
 
-Alerts are sent via callback function:
+- **Hailo** (HAILORT/HAILO8, HAILORT/HAILO8L)
+- **Axelera** (AXELERA/METIS)
+- **DEEPX** (DEEPX/M1A)
+- **Intel** (OPENVINO/CPU, OPENVINO/GPU, OPENVINO/NPU)
+- **NVIDIA** (TENSORRT/GPU)
+- **Rockchip** (RKNN/RK3588)
+- **Google** (TFLITE/EDGETPU)
+- **DeGirum** (N2X/ORCA1)
+
+See [DeGirum PySDK Installation](https://docs.degirum.com/pysdk/installation) for requirements and [Runtimes & Drivers](https://docs.degirum.com/pysdk/runtimes-and-drivers) for hardware setup.
+
+### Discovery
+
+`degirum-face` provides helper functions to discover what hardware is supported and available. Use these to check compatibility before configuring your models.
 
 ```python
-def my_alert_callback(alert_data):
-    print(f"Alert: {alert_data['identity']} detected!")
-    # Send notification, save to database, etc.
+# See what's supported
+supported = degirum_face.model_registry.get_hardware()
 
-config.alerting_callback = my_alert_callback
+# See what's available on cloud/local
+available = degirum_face.get_system_hw("@cloud")
+
+# Find what you can use right now
+compatible = degirum_face.get_compatible_hw("@cloud")
 ```
 
-### Clip Storage
-
-Save video clips when faces are detected:
-
-```yaml
-clip_storage_enabled: true  # Requires alerting_enabled: true
-clip_storage_output_folder: "./face_clips"
-clip_storage_duration_seconds: 5
-```
-
-Each clip contains:
-- Video segment around the face confirmation
-- Face thumbnail
-- Metadata (identity, timestamp, confidence)
-
-## Model Inference Modes
-
-### Local Inference (`@local`)
-
-Models run on your local hardware:
-
-```python
-inference_host_address="@local"
-```
-
-- **Pros:** Low latency, no internet needed, full privacy
-- **Cons:** Requires compatible hardware accelerator
-
-### Cloud Inference (`@cloud`)
-
-Models run on DeGirum cloud servers:
-
-```python
-inference_host_address="@cloud"
-```
-
-- **Pros:** No local hardware needed, try any accelerator type
-- **Cons:** Requires internet, higher latency, data leaves your system
-
-### Hybrid (IP Address)
-
-Run models on a separate inference server:
-
-```python
-inference_host_address="192.168.1.100"
-```
-
-- **Pros:** Offload compute to dedicated server, share accelerators
-- **Cons:** Requires network infrastructure
-
-## Common Patterns
-
-### Enroll Multiple Photos of Same Person
-
-```python
-face_recognizer.enroll_image("alice_1.jpg", "Alice")
-face_recognizer.enroll_image("alice_2.jpg", "Alice")
-face_recognizer.enroll_image("alice_3.jpg", "Alice")
-```
-
-Multiple enrollments improve recognition accuracy across different poses/lighting.
-
-### Unknown Face Handling
-
-```python
-result = face_recognizer.predict("photo.jpg")
-
-for face in result.faces:
-    if face.attributes == "Unknown":
-        if face.similarity_score and face.similarity_score < 0.3:
-            print("Very low similarity - likely a new person")
-        elif face.similarity_score:
-            print(f"Close match to enrolled face: {face.similarity_score}")
-```
-
-Low confidence on unknown faces means the face is similar to someone enrolled but below threshold.
-
-### Database Management
-
-```python
-# List all enrolled identities
-identities = face_recognizer.list_identities()
-
-# Remove a person from database
-face_recognizer.delete_identity("Bob")
-
-# Clear entire database
-face_recognizer.clear_database()
-```
-
-## Next Steps
-
-- **[Face Recognizer Overview](../guides/face-recognizer/overview.md)** - Deep dive into image recognition
-- **[Face Tracker Quick Start](../guides/face-tracker/quickstart.md)** - Start tracking video
-- **[Configuration Guide](../guides/face-recognizer/configuration.md)** - Customize your setup

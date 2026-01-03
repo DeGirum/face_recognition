@@ -6,7 +6,6 @@ Complete documentation for the `degirum-face` library - high-performance face re
 
 New to degirum-face? Start here:
 
-- **[Installation](getting-started/installation.md)** - Install the library and dependencies
 - **[Quick Start](getting-started/quickstart.md)** - Your first face recognition in 5 minutes
 - **[Basic Concepts](getting-started/basic-concepts.md)** - Core concepts and terminology
 
@@ -19,7 +18,6 @@ Process individual images or batches without temporal tracking:
 - **[Overview](guides/face-recognizer/overview.md)** - When to use FaceRecognizer and key concepts
 - **[Configuration](guides/face-recognizer/configuration.md)** - Configure models, hardware, and filters
 - **[Methods & API](guides/face-recognizer/methods.md)** - enroll, predict, and batch processing
-- **[Hardware & Deployment](guides/face-recognizer/deployment.md)** - Cloud, local, and edge deployment
 
 ### Face Tracking (Video & Streams)
 
@@ -50,7 +48,7 @@ Real-time video surveillance with persistent tracking:
 → [Batch Processing Guide](guides/face-recognizer/methods.md#predict_batch---recognize-faces-in-multiple-images-or-video-streams)
 
 **Deploy to edge hardware (Hailo, Intel NPU)**
-→ [Hardware Deployment Guide](guides/face-recognizer/deployment.md)
+→ [Hardware Options](getting-started/basic-concepts.md#deployment--hardware)
 
 **Configure face quality filters**
 → [Face Filters Reference](reference/face-filters.md)

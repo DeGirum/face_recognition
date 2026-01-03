@@ -13,6 +13,35 @@ Complete API reference for all `FaceRecognizer` methods.
 
 **Performance tip:** Use `_batch()` methods for multiple items - they provide ~2-3x speedup through pipeline parallelism.
 
+## FaceRecognitionResult
+
+`FaceRecognitionResult` objects represent detected faces with their properties. Returned directly by enrollment methods and contained in prediction results:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `attributes` | str or None | Matched person name (or None if unknown) |
+| `similarity_score` | float or None | Match confidence 0.0-1.0 (None if unknown) |
+| `db_id` | str or None | Database ID if matched |
+| `bbox` | list | Bounding box `[x1, y1, x2, y2]` |
+| `detection_score` | float | Face detection confidence 0.0-1.0 |
+| `landmarks` | array | Facial keypoints (eyes, nose, mouth) |
+| `embeddings` | list | Face embedding vector(s) (512-D each) |
+| `images` | list | Cropped face images (numpy arrays) corresponding to embeddings |
+
+**Common patterns:**
+
+```python
+# Check if face was detected
+if result:
+    print(f"Enrolled: {result.attributes}")
+
+# Access embedding
+embedding_vector = result.embeddings[0]  # 512-D numpy array
+
+# Get cropped face image
+cropped_face = result.images[0]  # Aligned 112×112 face image
+```
+
 ---
 
 ## enroll_image()
@@ -22,7 +51,7 @@ Enroll a single person's face from one image.
 ### Signature
 
 ```python
-enroll_image(frame: Any, attributes: Any) -> np.ndarray
+enroll_image(frame: Any, attributes: Any) -> Optional[FaceRecognitionResult]
 ```
 
 ### Parameters
@@ -32,7 +61,7 @@ enroll_image(frame: Any, attributes: Any) -> np.ndarray
 
 ### Returns
 
-- `np.ndarray` - The 512-D face embedding vector that was stored
+- `Optional[FaceRecognitionResult]` - Face recognition result for the enrolled face, or `None` if no face was detected
 
 ### How It Works
 
@@ -49,9 +78,12 @@ import degirum_face
 
 face_recognizer = degirum_face.FaceRecognizer()
 
-embedding = face_recognizer.enroll_image('photos/alice.jpg', 'Alice')
-print(f"Enrolled Alice with embedding shape: {embedding.shape}")
-# Output: Enrolled Alice with embedding shape: (512,)
+result = face_recognizer.enroll_image('photos/alice.jpg', 'Alice')
+if result:
+    print(f"Enrolled {result.attributes}")
+    print(f"Embedding shape: {result.embeddings[0].shape}")
+# Output: Enrolled Alice
+#         Embedding shape: (512,)
 ```
 
 **Enroll from numpy array:**
@@ -62,7 +94,7 @@ import cv2
 face_recognizer = degirum_face.FaceRecognizer()
 
 image = cv2.imread('photos/bob.jpg')
-embedding = face_recognizer.enroll_image(image, 'Bob')
+result = face_recognizer.enroll_image(image, 'Bob')
 ```
 
 **Enroll multiple photos of same person:**
@@ -89,7 +121,7 @@ Enroll multiple faces from multiple images efficiently.
 ### Signature
 
 ```python
-enroll_batch(frames: Iterable, attributes: Iterable) -> List[np.ndarray]
+enroll_batch(frames: Iterable, attributes: Iterable) -> List[FaceRecognitionResult]
 ```
 
 ### Parameters
@@ -99,7 +131,7 @@ enroll_batch(frames: Iterable, attributes: Iterable) -> List[np.ndarray]
 
 ### Returns
 
-- `List[np.ndarray]` - List of face embeddings that were stored
+- `List[FaceRecognitionResult]` - List of face recognition results for enrolled faces (frames with no detected faces are skipped)
 
 ### How It Works
 
@@ -121,13 +153,18 @@ image_paths = ['alice1.jpg', 'bob1.jpg', 'charlie1.jpg']
 names = ['Alice', 'Bob', 'Charlie']
 
 # Enroll all at once
-embeddings = face_recognizer.enroll_batch(
+results = face_recognizer.enroll_batch(
     frames=iter(image_paths),
     attributes=iter(names)
 )
 
-print(f"Enrolled {len(embeddings)} people")
+print(f"Enrolled {len(results)} people")
+for result in results:
+    print(f"  - {result.attributes}")
 # Output: Enrolled 3 people
+#           - Alice
+#           - Bob
+#           - Charlie
 ```
 
 **Enroll multiple photos of same person:**
@@ -136,12 +173,12 @@ print(f"Enrolled {len(embeddings)} people")
 alice_photos = ['alice1.jpg', 'alice2.jpg', 'alice3.jpg']
 alice_names = ['Alice', 'Alice', 'Alice']  # Same name repeated
 
-embeddings = face_recognizer.enroll_batch(
+results = face_recognizer.enroll_batch(
     frames=iter(alice_photos),
     attributes=iter(alice_names)
 )
 
-print(f"Enrolled {len(embeddings)} embeddings for Alice")
+print(f"Enrolled {len(results)} embeddings for Alice")
 # Output: Enrolled 3 embeddings for Alice
 ```
 
@@ -163,10 +200,12 @@ for person_dir in photo_dir.iterdir():
             attributes.append(person_name)
 
 # Enroll everyone
-embeddings = face_recognizer.enroll_batch(
+results = face_recognizer.enroll_batch(
     frames=iter(frames),
     attributes=iter(attributes)
 )
+
+print(f"Successfully enrolled {len(results)} faces")
 ```
 
 ### Best Practices
@@ -194,21 +233,7 @@ predict(frame: Any) -> InferenceResults
 
 ### Returns
 
-- `InferenceResults` - Object with `.faces` property containing list of `FaceRecognitionResult` objects
-
-### Result Object Structure
-
-Each face in `result.faces` has these properties:
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `attributes` | str or None | Matched person name (or None if unknown) |
-| `similarity_score` | float or None | Match confidence 0.0-1.0 (None if unknown) |
-| `db_id` | str or None | Database ID if matched |
-| `bbox` | list | Bounding box `[x1, y1, x2, y2]` |
-| `detection_score` | float | Face detection confidence 0.0-1.0 |
-| `landmarks` | array | Facial keypoints (eyes, nose, mouth) |
-| `embeddings` | array | Face embedding vector(s) |
+- `InferenceResults` - Object with `.faces` property containing list of `FaceRecognitionResult` objects (see [FaceRecognitionResult](#facerecognitionresult) above for properties). InferenceResults objects support standard PySDK methods like `image_overlay()`, `results`, etc. See [InferenceResults documentation](https://docs.degirum.com/pysdk/user-guide-pysdk/api-ref/postprocessor) for complete API reference.
 
 ### Examples
 
@@ -244,6 +269,7 @@ for i, face in enumerate(result.faces):
     print(f"  Detection confidence: {face.detection_score:.2f}")
     print(f"  Bounding box: {face.bbox}")
     print(f"  Database ID: {face.db_id}")
+    print(f"  Cropped images: {len(face.images)}")
 ```
 
 **Pretty print (uses `__str__()`):**
@@ -284,6 +310,30 @@ for face in result.faces:
         print(f"High confidence: {face.attributes} ({face.similarity_score:.2f})")
 ```
 
+**Access cropped face images:**
+```python
+import cv2
+
+result = face_recognizer.predict('photo.jpg')
+
+for i, face in enumerate(result.faces):
+    if face.images:
+        # face.images contains cropped face images as numpy arrays
+        cropped_face = face.images[0]  # Get first (or only) crop
+        
+        # Save cropped face to disk
+        if face.attributes:
+            cv2.imwrite(f"face_{face.attributes}_{i}.jpg", cropped_face)
+        else:
+            cv2.imwrite(f"face_unknown_{i}.jpg", cropped_face)
+```
+
+**Note:** The `images` list contains aligned and cropped face images (typically 112×112) that were used for embedding extraction. These are useful for:
+- Visual verification of detected faces
+- Creating face galleries or thumbnails
+- Quality assurance and debugging
+- Building custom datasets
+
 ### When to Use
 
 - Processing individual photos
@@ -309,7 +359,7 @@ predict_batch(frames: Iterable) -> Iterator[InferenceResults]
 
 ### Returns
 
-- `Iterator[InferenceResults]` - Iterator yielding results for each input frame
+- `Iterator[InferenceResults]` - Iterator yielding results for each input frame. InferenceResults objects support standard PySDK methods like `image_overlay()`, `results`, etc. See [InferenceResults documentation](https://docs.degirum.com/pysdk/user-guide-pysdk/api-ref/postprocessor) for complete API reference.
 
 ### How It Works
 
@@ -450,39 +500,3 @@ print(f"Found Alice in {len(alice_photos)} photos")
 - **Tracking:** For persistent face IDs across frames, consider using [FaceTracker](../face-tracker/quickstart.md) instead
 
 ---
-
-## Database Management Methods
-
-### list_identities()
-
-Get all enrolled person names.
-
-```python
-identities = face_recognizer.list_identities()
-print(f"Enrolled: {identities}")
-# Output: Enrolled: ['Alice', 'Bob', 'Charlie']
-```
-
-### delete_identity()
-
-Remove a specific person from database.
-
-```python
-face_recognizer.delete_identity("Bob")
-print("Removed Bob from database")
-```
-
-### clear_database()
-
-Delete all enrolled faces.
-
-```python
-face_recognizer.clear_database()
-print("Database cleared")
-```
-
-## Next Steps
-
-- **[Configuration Guide](configuration.md)** - Customize hardware and settings
-- **[Deployment Guide](deployment.md)** - Production deployment strategies
-- **[Face Tracker Methods](../face-tracker/methods.md)** - Video tracking methods

@@ -29,11 +29,13 @@ This repository demonstrates practical usage of the `degirum-face` Python packag
 
 ## Installation
 
-Install from PyPI:
-
 ```bash
 pip install degirum-face
 ```
+
+**Requirements & Hardware Drivers:** See [DeGirum PySDK Documentation](https://docs.degirum.com/pysdk/installation) for Python/OS requirements and [Runtimes & Drivers](https://docs.degirum.com/pysdk/runtimes-and-drivers) for hardware acceleration setup.
+
+**Quick Start:** Use `@cloud` inference to try without installing drivers locally.
 
 ## Quickstart
 
@@ -83,7 +85,6 @@ See [examples/](examples) for all available examples.
 ### Quick Links
 
 **Getting Started**
-- [Installation](docs/getting-started/installation.md) - Install the library and dependencies
 - [Quick Start](docs/getting-started/quickstart.md) - Your first face recognition in 5 minutes
 - [Basic Concepts](docs/getting-started/basic-concepts.md) - Core concepts and terminology
 

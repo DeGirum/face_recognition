@@ -69,44 +69,153 @@ face_filters = degirum_face.FaceFilterConfig(
 
 ## Model Specs Explained
 
-A `ModelSpec` tells `degirum-face` **which model** to load and **where to run it**.
+A `ModelSpec` tells `degirum-face` which model to load and where to run it. You have two options:
 
-### Helper Functions
+### Option 1: Use the Model Registry (Recommended)
 
-Use these helpers instead of creating `ModelSpec` objects manually:
+The `degirum-face` model registry provides pre-optimized models for all supported hardware. Use helper functions to automatically select the best model:
 
 ```python
 import degirum_face
 
-# Get optimized detection model for your hardware
+# Get detection model
 detector_spec = degirum_face.get_face_detection_model_spec(
     device_type="HAILORT/HAILO8",
     inference_host_address="@cloud"
 )
 
-# Get optimized embedding model for your hardware
+# Get embedding model
 embedding_spec = degirum_face.get_face_embedding_model_spec(
     device_type="HAILORT/HAILO8",
     inference_host_address="@cloud"
 )
 ```
 
-These functions automatically select the best models from the `degirum-face` model registry.
+**Parameters:**
+- `device_type` - Hardware accelerator (see [Basic Concepts](../../getting-started/basic-concepts.md#hardware-accelerators-device_type) for all options)
+- `inference_host_address` - Inference location: `@cloud`, `@local`, or AI server address (see [Basic Concepts](../../getting-started/basic-concepts.md#inference-location-inference_host_address))
 
-### Parameters
+### Option 2: Bring Your Own Models
 
-- **`device_type`** - Hardware accelerator to use:
-  - `TFLITE/CPU` - CPU only (default, works everywhere)
-  - `HAILORT/HAILO8` - Hailo-8 accelerator
-  - `OPENVINO/CPU`, `OPENVINO/NPU`, `OPENVINO/GPU` - Intel platforms
-  - `TENSORRT/GPU` - NVIDIA GPU
-  - `N2X/ORCA1` - DeGirum ORCA
-  - See [Deployment Guide](deployment.md) for all options
+For complete customization (using models outside the registry), create custom `ModelSpec` objects directly. See [ModelSpec Documentation](https://docs.degirum.com/degirum-tools/model_registry#modelspec) for details.
 
-- **`inference_host_address`** - Where to run:
-  - `@local` - Local machine
-  - `@cloud` - DeGirum AI Hub
-  - `192.168.1.100:8778` - Remote server
+## Similarity Threshold Tuning
+
+The similarity threshold controls match strictness:
+
+```python
+config = degirum_face.FaceRecognizerConfig(
+    cosine_similarity_threshold=0.50  # Adjust based on use case
+)
+```
+
+### Threshold Guide
+
+| Threshold | Behavior | Use Case |
+|-----------|----------|----------|
+| 0.30-0.40 | Very lenient | Maximum recall, accept some false positives |
+| 0.50-0.60 | Balanced | General use (recommended starting point) |
+| 0.65-0.75 | Strict | High precision, minimize false positives |
+| 0.80+ | Very strict | Security applications |
+
+### Tuning Strategy
+
+1. **Start with 0.50** - Good balance for most cases
+2. **Test with real data** - Process representative images
+3. **Adjust based on results:**
+   - Too many false positives? Increase threshold
+   - Missing valid matches? Decrease threshold
+4. **Consider use case:**
+   - Access control: Higher threshold (0.65-0.75)
+   - Photo organization: Lower threshold (0.45-0.55)
+
+## Database Path
+
+Enrolled face embeddings are stored in a LanceDB database file specified by `db_path`:
+
+```python
+config = degirum_face.FaceRecognizerConfig(
+    db_path="./face_db.lance",  # LanceDB file path
+    # ...
+)
+```
+
+**Important:** `degirum-face` enforces that a database created with one hardware type cannot be used with a different hardware type, as embeddings may vary between accelerators. The system will throw an error if you attempt to mix hardware types with the same database.
+
+## YAML Configuration
+
+`FaceRecognizerConfig` can be initialized from a YAML file or string using the `from_yaml()` method. This approach separates configuration from code, making it easier to version control settings, share configurations across teams, and maintain different configs for development, staging, and production environments.
+
+### Creating a YAML Config
+
+**face_config.yaml:**
+```yaml
+# Model configuration for face detection
+face_detector:
+  hardware: HAILORT/HAILO8
+  inference_host_address: "@local"
+  
+# Model configuration for face embedding
+face_embedder:
+  hardware: HAILORT/HAILO8
+  inference_host_address: "@local"
+  
+# Database configuration
+db_path: ./face_recognition_db.lance
+cosine_similarity_threshold: 0.6
+
+# Face filtering (optional)
+face_filters:
+  enable_small_face_filter: true
+  min_face_size: 50
+  enable_frontal_filter: true
+  enable_shift_filter: true
+```
+
+### Loading from YAML
+
+```python
+import degirum_face
+
+# Load configuration from file
+config, settings = degirum_face.FaceRecognizerConfig.from_yaml(
+    yaml_file="face_config.yaml"
+)
+
+# Create recognizer
+face_recognizer = degirum_face.FaceRecognizer(config)
+```
+
+**Returns:**
+- `config` - Initialized `FaceRecognizerConfig` object
+- `settings` - Raw dictionary (useful for debugging)
+
+### Loading from YAML String
+
+```python
+yaml_string = """
+face_detector:
+  hardware: OPENVINO/CPU
+  inference_host_address: "@local"
+face_embedder:
+  hardware: OPENVINO/CPU
+  inference_host_address: "@local"
+db_path: ./face_db.lance
+cosine_similarity_threshold: 0.6
+"""
+
+config, settings = degirum_face.FaceRecognizerConfig.from_yaml(
+    yaml_str=yaml_string
+)
+```
+
+### Benefits of YAML
+
+- **Clean separation** - Config separate from code
+- **Easy modification** - Change hardware without editing code
+- **Version control** - Track config changes in git
+- **Team collaboration** - Share standardized configs
+- **Multiple environments** - dev.yaml, staging.yaml, prod.yaml
 
 ## Configuration Examples
 
@@ -239,156 +348,3 @@ config = degirum_face.FaceRecognizerConfig(
 
 face_recognizer = degirum_face.FaceRecognizer(config)
 ```
-
-## YAML Configuration
-
-Store configuration in YAML files for production deployments.
-
-### Creating a YAML Config
-
-**face_config.yaml:**
-```yaml
-# Model configuration for face detection
-face_detector:
-  hardware: HAILORT/HAILO8
-  inference_host_address: "@local"
-  model_zoo_url: degirum/hailo
-
-# Model configuration for face embedding
-face_embedder:
-  hardware: HAILORT/HAILO8
-  inference_host_address: "@local"
-  model_zoo_url: degirum/hailo
-
-# Database configuration
-db_path: ./face_recognition_db.lance
-cosine_similarity_threshold: 0.6
-
-# Face filtering (optional)
-face_filters:
-  enable_small_face_filter: true
-  min_face_size: 50
-  enable_frontal_filter: true
-  enable_shift_filter: true
-```
-
-### Loading from YAML
-
-```python
-import degirum_face
-
-# Load configuration from file
-config, settings = degirum_face.FaceRecognizerConfig.from_yaml(
-    yaml_file="face_config.yaml"
-)
-
-# Create recognizer
-face_recognizer = degirum_face.FaceRecognizer(config)
-```
-
-**Returns:**
-- `config` - Initialized `FaceRecognizerConfig` object
-- `settings` - Raw dictionary (useful for debugging)
-
-### Loading from YAML String
-
-```python
-yaml_string = """
-face_detector:
-  hardware: OPENVINO/CPU
-  inference_host_address: "@local"
-face_embedder:
-  hardware: OPENVINO/CPU
-  inference_host_address: "@local"
-db_path: ./face_db.lance
-cosine_similarity_threshold: 0.6
-"""
-
-config, settings = degirum_face.FaceRecognizerConfig.from_yaml(
-    yaml_str=yaml_string
-)
-```
-
-### Benefits of YAML
-
-- **Clean separation** - Config separate from code
-- **Easy modification** - Change hardware without editing code
-- **Version control** - Track config changes in git
-- **Team collaboration** - Share standardized configs
-- **Multiple environments** - dev.yaml, staging.yaml, prod.yaml
-
-## Similarity Threshold Tuning
-
-The similarity threshold controls match strictness:
-
-```python
-config = degirum_face.FaceRecognizerConfig(
-    cosine_similarity_threshold=0.50  # Adjust based on use case
-)
-```
-
-### Threshold Guide
-
-| Threshold | Behavior | Use Case |
-|-----------|----------|----------|
-| 0.30-0.40 | Very lenient | Maximum recall, accept some false positives |
-| 0.50-0.60 | Balanced | General use (recommended starting point) |
-| 0.65-0.75 | Strict | High precision, minimize false positives |
-| 0.80+ | Very strict | Security applications |
-
-### Tuning Strategy
-
-1. **Start with 0.50** - Good balance for most cases
-2. **Test with real data** - Process representative images
-3. **Adjust based on results:**
-   - Too many false positives? Increase threshold
-   - Missing valid matches? Decrease threshold
-4. **Consider use case:**
-   - Access control: Higher threshold (0.65-0.75)
-   - Photo organization: Lower threshold (0.45-0.55)
-
-## Database Management
-
-### Database Paths
-
-Use separate databases for different hardware:
-
-```python
-# Different databases for different accelerators
-config_hailo = degirum_face.FaceRecognizerConfig(
-    db_path="./face_db_hailo8.lance",
-    # ...
-)
-
-config_cpu = degirum_face.FaceRecognizerConfig(
-    db_path="./face_db_cpu.lance",
-    # ...
-)
-```
-
-**Why?** Different hardware may produce slightly different embeddings.
-
-### Database Operations
-
-```python
-import degirum_face
-
-face_recognizer = degirum_face.FaceRecognizer()
-
-# List all enrolled identities
-identities = face_recognizer.list_identities()
-print(f"Enrolled: {identities}")
-
-# Remove a specific person
-face_recognizer.delete_identity("Bob")
-
-# Clear entire database
-face_recognizer.clear_database()
-```
-
-## Next Steps
-
-- **[Methods Reference](methods.md)** - Complete API documentation
-- **[Deployment Guide](deployment.md)** - Hardware selection and production setup
-- **[Face Filters Reference](../../reference/face-filters.md)** - Quality filtering options
-- **[YAML Configuration Reference](../../reference/yaml-config.md)** - Complete YAML schema

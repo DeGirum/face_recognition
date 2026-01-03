@@ -1,180 +1,145 @@
 # Quick Start
 
-Get started with `degirum-face` in under 5 minutes!
+Build practical face recognition workflows step-by-step.
 
-## Your First Face Recognition
+## Prerequisites
 
-This example uses built-in demo images and runs on CPU, so it works on any system:
+Install the package (see [main README](../../README.md) for requirements):
+
+```bash
+pip install degirum-face
+```
+
+## Task 1: Recognize Faces in Your Photos
+
+**Goal:** Identify who appears in group photos based on enrolled reference images.
+
+### Step 1: Enroll People
+
+Start by adding known faces to your database:
 
 ```python
 import degirum_face
-from degirum_tools import remote_assets
 
-# Demo parameters – change these to try your own images/names
-ENROLL_IMAGE = remote_assets.face1
-TEST_IMAGE = remote_assets.face2
-PERSON_NAME = "Alice"
-
-# 1. Create a face recognizer with default configuration
-# By default: uses TFLITE/CPU models running locally
+# Create recognizer (defaults to CPU models)
 face_recognizer = degirum_face.FaceRecognizer()
 
-# 2. Enroll a person from a reference image
-face_recognizer.enroll_image(ENROLL_IMAGE, PERSON_NAME)
+# Add people from reference photos
+face_recognizer.enroll_image("john_headshot.jpg", "John")
+face_recognizer.enroll_image("mary_headshot.jpg", "Mary")
+face_recognizer.enroll_image("alice_photo.jpg", "Alice")
 
-# 3. Recognize faces in a test image
-print("After enrollment:")
-result = face_recognizer.predict(TEST_IMAGE)
-for face in result.faces:
-    print(face)
+print(f"Enrolled: {face_recognizer.list_identities()}")
 ```
 
-**Output:**
-```
-After enrollment:
-FaceRecord(identity='Alice', confidence=0.92, bbox=BBox(...), embedding=...)
-```
+**What happens:** Each person gets enrolled with all their facial embeddings stored in a LanceDB database (`./face_db.lance`).
 
-## What Just Happened?
+### Step 2: Identify Faces
 
-1. **Created a recognizer** - `FaceRecognizer()` sets up face detection and recognition models
-2. **Enrolled a face** - `enroll_image()` added "Alice" to the database
-3. **Recognized faces** - `predict()` detected and identified faces in the test image
-
-## Common Use Cases
-
-### Batch Process Images
-
-Recognize all faces in a directory:
+Now recognize who's in your photos:
 
 ```python
-import degirum_face
+# Identify faces in a group photo
+result = face_recognizer.predict("group_photo.jpg")
 
-face_recognizer = degirum_face.FaceRecognizer()
-
-# Enroll reference faces
-face_recognizer.enroll_image("photos/john.jpg", "John")
-face_recognizer.enroll_image("photos/mary.jpg", "Mary")
-
-# Process all images in a folder
-results = face_recognizer.predict_batch("group_photos/")
-
-for img_path, result in results:
-    print(f"\n{img_path}:")
-    for face in result.faces:
-        print(f"  {face.identity} ({face.confidence:.2f})")
+for i, face in enumerate(result.faces):
+    if face.attributes:
+        print(f"Face {i+1}: {face.attributes} (confidence: {face.similarity_score:.2f})")
+    else:
+        print(f"Face {i+1}: Unknown person")
 ```
 
-### Real-Time Video Tracking
+**What happens:** The system detects all faces, extracts embeddings, and matches against your enrolled database.
 
-Track faces in a live video stream:
+## Task 2: Process a Folder of Images
+
+**Goal:** Batch process hundreds of photos to find specific people.
 
 ```python
-import degirum_face
-
-# Configure video source and tracking
-config = degirum_face.FaceTrackerConfig.from_yaml("config.yaml")
-face_tracker = degirum_face.FaceTracker(config)
-
-# Start tracking pipeline
-# This opens a video player window and processes the stream
-face_tracker.start_face_tracking_pipeline()
-```
-
-**config.yaml:**
-```yaml
-video_source: "rtsp://camera.local/stream"
-confirmation_type: "consecutive"
-confirmation_frames: 3
-```
-
-See [Face Tracker Quick Start](../guides/face-tracker/quickstart.md) for details.
-
-### Search for Similar Faces
-
-Find all photos containing a specific person:
-
-```python
-import degirum_face
 from pathlib import Path
 
-face_recognizer = degirum_face.FaceRecognizer()
+# Get all images in a directory
+image_files = list(Path("vacation_photos/").glob("*.jpg"))
 
-# Enroll the reference photo
+# Process all at once (faster than one-by-one)
+for result in face_recognizer.predict_batch(iter(image_files)):
+    matches = [f.attributes for f in result.faces if f.attributes]
+    
+    if "John" in matches:
+        print(f"John appears in: {result.image_path}")
+```
+
+**Why batch?** `predict_batch()` is optimized for processing many images efficiently.
+
+## Task 3: Find All Photos of a Person
+
+**Goal:** Search your photo library for all images containing a specific person.
+
+```python
+from pathlib import Path
+
+# Enroll the target person
 face_recognizer.enroll_image("reference/target_person.jpg", "Target")
 
-# Search through all photos
+# Search all photos
+matches = []
 for photo in Path("photo_library/").glob("*.jpg"):
     result = face_recognizer.predict(str(photo))
     
-    # Check if target person is in this photo
+    # Check if target person appears with high confidence
     for face in result.faces:
-        if face.identity == "Target" and face.confidence > 0.85:
-            print(f"Found in: {photo}")
+        if face.attributes == "Target" and face.similarity_score > 0.85:
+            matches.append(photo)
             break
+
+print(f"Found {len(matches)} photos containing Target")
 ```
 
-## Using YAML Configuration
+**Tip:** Adjust `similarity_score` threshold (0.85 here) based on your accuracy needs.
 
-For production use, configure via YAML files:
+## Task 4: Track Faces in Video
 
-**config.yaml:**
-```yaml
-face_detection_model_zoo_url: degirum/public
-face_detection_model_name: yolov8n_relu6_face_det--512x512_quant_n2x_orca1_1
-inference_host_address: "@local"
+**Goal:** Monitor a video stream or file with real-time face recognition.
 
-landmark_model_zoo_url: degirum/public
-landmark_model_name: mobilefacenet_lmks_5pt--112x112_quant_n2x_orca1_1
+**When to use FaceTracker:** Video requires temporal tracking (same person across frames), not just frame-by-frame recognition. Use `FaceTracker` instead of `FaceRecognizer`.
 
-embedding_model_zoo_url: degirum/public
-embedding_model_name: arcface_resnet100--112x112_quant_n2x_orca1_1
-
-face_database_path: "./face_database.lance"
-similarity_threshold: 0.50
-```
-
-**Python code:**
 ```python
 import degirum_face
 
-# Load configuration from YAML
-config = degirum_face.FaceRecognizerConfig.from_yaml("config.yaml")
-face_recognizer = degirum_face.FaceRecognizer(config)
+# Create tracker with video source
+config = degirum_face.FaceTrackerConfig(
+    video_source="security_camera.mp4",
+    db_path="./tracker_db.lance"
+)
+face_tracker = degirum_face.FaceTracker(config)
 
-# Rest of your code...
-face_recognizer.enroll_image("person.jpg", "Alice")
-result = face_recognizer.predict("test.jpg")
+# Start real-time tracking
+face_tracker.start_face_tracking_pipeline()
 ```
+
+See [Face Tracker Quick Start](../guides/face-tracker/quickstart.md) for complete video tracking workflow.
+
+## What You've Learned
+
+- **Single image recognition** - `predict()` for one image at a time
+- **Batch processing** - `predict_batch()` for efficient multi-image processing  
+- **Database enrollment** - `enroll_image()` to add known people
+- **Threshold tuning** - `similarity_score` controls match sensitivity
+- **Video tracking** - Use `FaceTracker` for temporal awareness across frames
 
 ## Next Steps
 
-Choose your path:
+**Understand the system:**
+- [Basic Concepts](basic-concepts.md) - Recognition pipeline, result properties, deployment options
 
-### Image Recognition
-- **[Face Recognizer Overview](../guides/face-recognizer/overview.md)** - Concepts and architecture
-- **[Configuration Guide](../guides/face-recognizer/configuration.md)** - Customize models and thresholds
-- **[Methods Reference](../guides/face-recognizer/methods.md)** - All available methods
+**Configure for your needs:**
+- [Configuration Guide](../guides/face-recognizer/configuration.md) - Hardware selection, quality filters, thresholds
+- [Face Filters](../reference/face-filters.md) - Filter by size, frontal pose, zone, etc.
 
-### Video Tracking
-- **[Face Tracker Quick Start](../guides/face-tracker/quickstart.md)** - Real-time tracking
-- **[Configuration Guide](../guides/face-tracker/configuration.md)** - Video sources and alerts
-- **[Methods Reference](../guides/face-tracker/methods.md)** - Pipeline and batch methods
+**Advanced usage:**
+- [Methods Reference](../guides/face-recognizer/methods.md) - All APIs with detailed examples
+- [Face Tracker Guide](../guides/face-tracker/quickstart.md) - Complete video tracking workflow
 
-### Reference
-- **[Face Filters](../reference/face-filters.md)** - Age, gender, quality filtering
-- **[YAML Configuration](../reference/yaml-config.md)** - Complete YAML schema
-- **[Hardware Selection](../guides/face-recognizer/deployment.md)** - Choose the right accelerator
-
-## Examples
-
-Explore working code in the [examples/](../../examples/) folder:
-
-| Example | Description |
-|---------|-------------|
-| [face_recognition_simple.py](../../examples/face_recognition_simple.py) | Recognize faces in images |
-| [face_recognition_enroll.py](../../examples/face_recognition_enroll.py) | Add faces to database |
-| [face_tracking_simple.py](../../examples/face_tracking_simple.py) | Real-time face tracking |
-| [find_similar_faces.py](../../examples/find_similar_faces.py) | Find similar faces in a collection |
-| [group_similar_faces.py](../../examples/group_similar_faces.py) | Group photos by person |
-| [Tutorials.ipynb](../../examples/Tutorials.ipynb) | Interactive Jupyter tutorials |
+**Working examples:**
+- [examples/](../../examples/) folder - Ready-to-run Python scripts
+- [Tutorials.ipynb](../../examples/Tutorials.ipynb) - Interactive Jupyter notebooks
