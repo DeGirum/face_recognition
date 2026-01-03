@@ -117,24 +117,25 @@ See [Hardware & Deployment](../guides/face-recognizer/deployment.md) for device 
 
 ## Face Records
 
-All face results are returned as `FaceRecord` objects:
+All face results are returned as `FaceRecognitionResult` objects:
 
 ```python
 result = face_recognizer.predict("photo.jpg")
 
 for face in result.faces:
-    print(f"Identity: {face.identity}")         # Person's name or "Unknown"
-    print(f"Confidence: {face.confidence}")     # Similarity score (0.0-1.0)
-    print(f"Bounding Box: {face.bbox}")         # BBox(x, y, w, h)
-    print(f"Embedding: {face.embedding}")       # 512-D vector
-    print(f"Quality: {face.quality_score}")     # Face quality (0.0-1.0)
+    print(f"Person: {face.attributes}")             # Person's name or None
+    print(f"Confidence: {face.similarity_score}")   # Similarity score (0.0-1.0)
+    print(f"Bounding Box: {face.bbox}")             # [x1, y1, x2, y2]
+    print(f"Embedding: {face.embeddings}")          # 512-D vector
+    print(f"Database ID: {face.db_id}")             # DB ID if matched
+    print(f"Detection: {face.detection_score}")     # Detection confidence
 ```
 
 ### Identity Assignment
 
-- **Known face:** `identity` is the enrolled person's name
-- **Unknown face:** `identity` is `"Unknown"`
-- **Confidence:** Higher = more similar to enrolled face (max 1.0)
+- **Known face:** `attributes` contains the enrolled person's name
+- **Unknown face:** `attributes` is `None`
+- **Confidence:** Higher `similarity_score` = more similar to enrolled face (max 1.0)
 
 ## Face Tracking Concepts
 
@@ -237,14 +238,14 @@ Multiple enrollments improve recognition accuracy across different poses/lightin
 result = face_recognizer.predict("photo.jpg")
 
 for face in result.faces:
-    if face.identity == "Unknown":
-        if face.confidence < 0.3:
+    if face.attributes == "Unknown":
+        if face.similarity_score and face.similarity_score < 0.3:
             print("Very low similarity - likely a new person")
-        else:
-            print(f"Close match to enrolled face: {face.confidence}")
+        elif face.similarity_score:
+            print(f"Close match to enrolled face: {face.similarity_score}")
 ```
 
-Low confidence on "Unknown" = face is similar to someone enrolled but below threshold.
+Low confidence on unknown faces means the face is similar to someone enrolled but below threshold.
 
 ### Database Management
 

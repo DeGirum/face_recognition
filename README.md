@@ -78,29 +78,29 @@ See [examples/](examples) for all available examples.
 
 ## Documentation
 
-Complete documentation is in the [`docs/`](docs/) folder:
+📚 **[Complete Documentation](docs/index.md)** - Professional documentation site in the `docs/` folder
 
-### FaceRecognizer (Image/Batch Processing)
-- **[FaceRecognizer Guide](docs/face_recognizer.md)** - Complete guide for image and batch processing
-  - Understanding the defaults
-  - Configuration anatomy
-  - Methods (enroll, predict, batch processing)
-  - Deployment options (cloud, local, remote)
-  - Hardware selection (12+ accelerator platforms)
-  - YAML configuration
-  - Face filtering
+### Quick Links
 
-### FaceTracker (Video Surveillance)
-- **[Quick Start](docs/face_tracker_quickstart.md)** - Get started with video tracking quickly
-- **[Configuration Reference](docs/face_tracker_config.md)** - All configuration options
-- **[Methods Guide](docs/face_tracker_methods.md)** - All methods with workflows and examples
+**Getting Started**
+- [Installation](docs/getting-started/installation.md) - Install the library and dependencies
+- [Quick Start](docs/getting-started/quickstart.md) - Your first face recognition in 5 minutes
+- [Basic Concepts](docs/getting-started/basic-concepts.md) - Core concepts and terminology
 
-### Additional Guides
-- **[FaceClipManager](docs/face_clip_manager.md)** - Manage video clips in object storage
-- **[Documentation Index](docs/README.md)** - Complete documentation index with quick navigation
+**Face Recognizer (Images & Batches)**
+- [Overview](docs/guides/face-recognizer/overview.md) - When to use and key concepts
+- [Configuration](docs/guides/face-recognizer/configuration.md) - Models, hardware, and filters
+- [Methods & API](docs/guides/face-recognizer/methods.md) - Complete API reference
+- [Deployment](docs/guides/face-recognizer/deployment.md) - Cloud, local, and edge deployment
 
-### Examples
-- [examples/](examples) - Ready-to-run code samples
+**Face Tracker (Video & Streams)**
+- [Quick Start](docs/guides/face-tracker/quickstart.md) - Real-time video tracking
+- [Configuration](docs/guides/face-tracker/configuration.md) - Video sources, alerts, clips
+- [Methods](docs/guides/face-tracker/methods.md) - All methods with workflows
+
+**Reference**
+- [Face Filters](docs/reference/face-filters.md) - Quality filtering options
+- [YAML Config](docs/reference/yaml-config.md) - Complete YAML reference
 
 ## License
 See [LICENSE](LICENSE#L1) for license details.
