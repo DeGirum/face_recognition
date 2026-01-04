@@ -271,7 +271,7 @@ filters = degirum_face.FaceFilterConfig(
 - **`enable_reid_expiration_filter`** (bool) - Enable/disable the ReID expiration filter (default: True)
 - **`reid_expiration_frames`** (int) - Maximum interval in frames between embedding extractions for stable tracks (default: 30)
 
-#### How it Works
+#### How It Works
 
 When enabled, the filter adaptively increases the interval between embedding extractions for continuously tracked faces:
 
@@ -495,9 +495,3 @@ filters = degirum_face.FaceFilterConfig(
    - Security: Strict filtering
    - General use: Balanced filtering
    - Search/discovery: Permissive filtering
-
-## Next Steps
-
-- **[Configuration Guide](../guides/face-recognizer/configuration.md)** - Complete configuration reference
-- **[YAML Configuration](yaml-config.md)** - YAML schema reference
-- **[Face Tracker Filters](../guides/face-tracker/configuration.md#face-filters)** - Filters for video tracking

@@ -200,12 +200,3 @@ storage_config = degirum_tools.ObjectStorageConfig(
     bucket="production-security-footage"
 )
 ```
-
----
-
-## See Also
-
-- [FaceTracker Configuration](../guides/face-tracker/configuration.md)
-- [FaceClipManager Configuration](../guides/face-clip-manager/configuration.md)
-- [Face Filters Reference](face-filters.md)
-- [YAML Configuration Reference](yaml-config.md)
