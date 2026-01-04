@@ -28,5 +28,6 @@
 
 ## Reference
 
+* [Face Data Classes](reference/face-recognition-result.md)
 * [Face Filters](reference/face-filters.md)
 * [Object Storage Configuration](reference/storage-config.md)

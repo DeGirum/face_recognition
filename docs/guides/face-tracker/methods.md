@@ -104,21 +104,13 @@ predict_batch(stream: Iterable) -> Iterator[InferenceResults]
 
 ### Returns
 
-- Iterator of `InferenceResults` objects. InferenceResults objects support standard PySDK methods like `image_overlay()`, `results`, etc. See [InferenceResults documentation](https://docs.degirum.com/pysdk/user-guide-pysdk/api-ref/postprocessor) for complete API reference.
+- Iterator of `InferenceResults` objects. InferenceResults objects support standard PySDK methods like `image_overlay()`, `results`, etc. See [InferenceResults documentation](https://docs.degirum.com/pysdk/user-guide-pysdk/api-ref/postprocessor)
 
 Each result contains:
 - `results` - List of detection dictionaries with tracking data (access via `result.results[i].get("track_id")`)
-- `faces` property - List of `FaceRecognitionResult` objects for easier access
-- Each `FaceRecognitionResult` includes:
-  - `embeddings` - Face embedding vectors
-  - `db_id` - Database ID (if matched)
-  - `attributes` - Person name (if recognized)
-  - `similarity_score` - Match confidence score
-  - `bbox` - Bounding box coordinates
-  - `detection_score` - Face detection confidence
-  - `landmarks` - Facial landmarks
-  - `frame_id` - Frame number
-  - `images` - Cropped face images
+- `faces` property - List of `FaceRecognitionResult` objects. See [FaceRecognitionResult Reference](../../reference/face-recognition-result.md)
+
+**Note:** Tracking data (`track_id`, `frame_id`) is in the `results` list, not as properties of `FaceRecognitionResult`. To correlate, use the same index for both lists.
 
 ### Example: Custom Logging
 

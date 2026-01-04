@@ -15,32 +15,11 @@
 
 ## FaceRecognitionResult
 
-`FaceRecognitionResult` objects represent detected faces with their properties. Returned directly by enrollment methods and contained in prediction results:
+`FaceRecognitionResult` objects represent detected faces with their properties. Returned directly by enrollment methods and contained in prediction results.
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `attributes` | str or None | Matched person name (or None if unknown) |
-| `similarity_score` | float or None | Match confidence 0.0-1.0 (None if unknown) |
-| `db_id` | str or None | Database ID if matched |
-| `bbox` | list | Bounding box `[x1, y1, x2, y2]` |
-| `detection_score` | float | Face detection confidence 0.0-1.0 |
-| `landmarks` | array | Facial keypoints (eyes, nose, mouth) |
-| `embeddings` | list | Face embedding vector(s) (512-D each) |
-| `images` | list | Cropped face images (numpy arrays) corresponding to embeddings |
+**Key properties:** `attributes`, `similarity_score`, `bbox`, `embeddings`, `images`
 
-**Common patterns:**
-
-```python
-# Check if face was detected
-if result:
-    print(f"Enrolled: {result.attributes}")
-
-# Access embedding
-embedding_vector = result.embeddings[0]  # 512-D numpy array
-
-# Get cropped face image
-cropped_face = result.images[0]  # Aligned 112×112 face image
-```
+See [FaceRecognitionResult Reference](../../reference/face-recognition-result.md) for complete property list and usage examples.
 
 ---
 
@@ -61,7 +40,7 @@ enroll_image(frame: Any, attributes: Any) -> Optional[FaceRecognitionResult]
 
 ### Returns
 
-- `Optional[FaceRecognitionResult]` - Face recognition result for the enrolled face, or `None` if no face was detected
+- `Optional[FaceRecognitionResult]` - Face recognition result for the enrolled face, or `None` if no face was detected. See [FaceRecognitionResult Reference](../../reference/face-recognition-result.md)
 
 ### How It Works
 
@@ -131,7 +110,7 @@ enroll_batch(frames: Iterable, attributes: Iterable) -> List[FaceRecognitionResu
 
 ### Returns
 
-- `List[FaceRecognitionResult]` - List of face recognition results for enrolled faces (frames with no detected faces are skipped)
+- `List[FaceRecognitionResult]` - List of face recognition results for enrolled faces (frames with no detected faces are skipped). See [FaceRecognitionResult Reference](../../reference/face-recognition-result.md)
 
 ### How It Works
 
@@ -233,7 +212,7 @@ predict(frame: Any) -> InferenceResults
 
 ### Returns
 
-- `InferenceResults` - Object with `.faces` property containing list of `FaceRecognitionResult` objects (see [FaceRecognitionResult](#facerecognitionresult) above for properties). InferenceResults objects support standard PySDK methods like `image_overlay()`, `results`, etc. See [InferenceResults documentation](https://docs.degirum.com/pysdk/user-guide-pysdk/api-ref/postprocessor) for complete API reference.
+- `InferenceResults` - Object with `.faces` property containing list of `FaceRecognitionResult` objects. See [FaceRecognitionResult Reference](../../reference/face-recognition-result.md) for properties. InferenceResults objects support standard PySDK methods like `image_overlay()`, `results`, etc. See [InferenceResults documentation](https://docs.degirum.com/pysdk/user-guide-pysdk/api-ref/postprocessor)
 
 ### Examples
 

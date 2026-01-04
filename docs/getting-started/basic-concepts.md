@@ -89,7 +89,7 @@ for face in result.faces:
 - `bbox` - Face bounding box
 - `images` - Cropped face images (numpy arrays)
 
-See [Methods Reference](../guides/face-recognizer/methods.md#predict) for complete property list and detailed usage examples.
+See [FaceRecognitionResult Reference](../reference/face-recognition-result.md) for complete property list and usage examples.
 
 ## Deployment & Hardware
 
