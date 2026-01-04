@@ -23,7 +23,7 @@ Process individual images or batches without temporal tracking:
 
 Real-time video surveillance with persistent tracking:
 
-- **[Quick Start](guides/face-tracker/quickstart.md)** - Get started with video tracking
+- **[Overview](guides/face-tracker/overview.md)** - Get started with video tracking
 - **[Configuration](guides/face-tracker/configuration.md)** - Video sources, alerting, and clip storage
 - **[Methods & Workflows](guides/face-tracker/methods.md)** - All methods with use cases
 - **[Clip Manager](guides/face-clip-manager.md)** - Manage video clips in storage
@@ -42,7 +42,7 @@ Real-time video surveillance with persistent tracking:
 → [Face Recognizer Quick Start](guides/face-recognizer/overview.md#quick-example)
 
 **Monitor a live camera feed**
-→ [Face Tracker Quick Start](guides/face-tracker/quickstart.md)
+→ [Face Tracker Overview](guides/face-tracker/overview.md)
 
 **Process a batch of images**
 → [Batch Processing Guide](guides/face-recognizer/methods.md#predict_batch---recognize-faces-in-multiple-images-or-video-streams)

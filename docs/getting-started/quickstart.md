@@ -117,7 +117,7 @@ face_tracker = degirum_face.FaceTracker(config)
 face_tracker.start_face_tracking_pipeline()
 ```
 
-See [Face Tracker Quick Start](../guides/face-tracker/quickstart.md) for complete video tracking workflow.
+See [Face Tracker Overview](../guides/face-tracker/overview.md) for complete video tracking workflow.
 
 ## What You've Learned
 
@@ -138,7 +138,7 @@ See [Face Tracker Quick Start](../guides/face-tracker/quickstart.md) for complet
 
 **Advanced usage:**
 - [Methods Reference](../guides/face-recognizer/methods.md) - All APIs with detailed examples
-- [Face Tracker Guide](../guides/face-tracker/quickstart.md) - Complete video tracking workflow
+- [Face Tracker Guide](../guides/face-tracker/overview.md) - Complete video tracking workflow
 
 **Working examples:**
 - [examples/](../../examples/) folder - Ready-to-run Python scripts

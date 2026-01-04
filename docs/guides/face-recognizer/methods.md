@@ -497,6 +497,6 @@ print(f"Found Alice in {len(alice_photos)} photos")
 - **For images:** Use `iter(image_list)` to convert list to iterator
 - **Custom needs:** Define your own generator for preprocessing or frame skipping
 - **FPS control:** Use `fps=N` parameter in `video_source()` to control processing rate
-- **Tracking:** For persistent face IDs across frames, consider using [FaceTracker](../face-tracker/quickstart.md) instead
+- **Tracking:** For persistent face IDs across frames, consider using [FaceTracker](../face-tracker/overview.md) instead
 
 ---

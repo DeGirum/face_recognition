@@ -1,33 +1,25 @@
-# FaceTracker Configuration Reference
+# FaceTracker Configuration
 
-Complete guide to all `FaceTrackerConfig` settings for production video surveillance applications.
+Complete guide to configuring `FaceTracker` for production video surveillance applications.
 
-## Overview
+## Configuration Inheritance
 
-`FaceTrackerConfig` inherits from `FaceRecognizerConfig` and adds tracking-specific settings for continuous video monitoring.
+`FaceTrackerConfig` extends `FaceRecognizerConfig` and inherits all base settings:
 
-### Configuration Inheritance
-
-All FaceRecognizer settings apply:
-- **Face detection model spec** - Which detection model and hardware
-- **Face embedding model spec** - Which embedding model and hardware
-- **Database path** - Where face embeddings are stored
+- **Model specifications** - Face detection and embedding models (device_type, inference_host_address)
+- **Database path** - Where face embeddings are stored  
 - **Similarity threshold** - Matching confidence (0.0-1.0)
 - **Face filters** - Quality gates (small face, frontal, zone, shift)
 
-See the [FaceRecognizer Configuration Guide](face_recognizer.md#anatomy-of-facerecognizerconfig) for details on these inherited settings.
-
-### Additional Tracking Settings
-
-`FaceTracker` extends `FaceRecognizer` for **continuous video streams** with real-time monitoring capabilities. While `FaceRecognizer` processes individual images or batches, `FaceTracker` adds persistent tracking across frames, automated alerting when specific conditions are met, video clip recording for evidence, and live streaming for remote monitoring.
+See [FaceRecognizer Configuration](../face-recognizer/configuration.md) for details on these settings.
 
 ---
 
 ## Configuration Parameters
 
-### 1. Video Source
+FaceTracker adds the following tracking-specific parameters:
 
-Input video source and overrides for incorrect camera metadata.
+### Video Source
 
 **Parameters:**
 
@@ -36,423 +28,237 @@ Input video source and overrides for incorrect camera metadata.
   - String path (e.g., `"video.mp4"`) - Video file
   - RTSP URL (e.g., `"rtsp://192.168.1.100/stream"`) - IP camera
 
-- **`video_source_fps_override`** - Override frame rate when camera reports incorrect FPS (default: 0.0 = no override)
+- **`video_source_fps_override`** (optional) - Override frame rate when camera reports incorrect FPS (default: 0.0 = no override)
 
-- **`video_source_resolution_override`** - Override resolution as `(width, height)` tuple when camera reports incorrect dimensions (default: (0, 0) = no override)
-
-**Example:**
-```python
-config = degirum_face.FaceTrackerConfig(
-    video_source="rtsp://192.168.1.100/stream",
-    video_source_fps_override=30.0,  # Force 30 FPS
-    video_source_resolution_override=(1920, 1080),  # Force 1080p
-)
-```
+- **`video_source_resolution_override`** (optional) - Override resolution as `(width, height)` tuple when camera reports incorrect dimensions (default: (0, 0) = no override)
 
 ---
 
-### 2. Face Tracking Confirmation
+### Credence Count
 
-Controls when a detected face is "confirmed" for tracking and subsequent processing.
+Controls when a detected face is confirmed as a valid track for processing.
 
-**Parameters:**
+**Parameter:**
 
-- **`credence_count`** - Number of consecutive frames a face must appear before being confirmed as a valid track. Reduces false positives from momentary detections, camera noise, or transient objects.
+- **`credence_count`** - Number of consecutive frames a face must appear before being confirmed. Reduces false positives from momentary detections or camera noise.
 
 **Recommended values:**
 - `2-4` - Real-time monitoring (quick confirmation)
 - `5-10` - High-traffic areas (reduce false positives)
 - `10+` - Critical security applications (maximum stability)
 
-**Example:**
-```python
-config = degirum_face.FaceTrackerConfig(
-    credence_count=6,  # Require 6 consecutive frames
-)
-```
-
 ---
 
-### 3. Alerting and Notifications
+### Alert Mode and Notifications
 
-Controls when and how alerts are triggered for confirmed faces, including notification delivery.
-
-**Note:** Clip recording (see next section) only occurs when `alert_mode` is not `NONE`. Alerts trigger the video clip saving mechanism.
+Controls when alerts are triggered and how notifications are delivered.
 
 **Parameters:**
 
-- **`alert_mode`** - Controls when alerts are triggered:
+- **`alert_mode`** - When to trigger alerts:
   - `AlertMode.NONE` - No alerts
   - `AlertMode.ON_UNKNOWNS` - Alert when unknown face detected
   - `AlertMode.ON_KNOWNS` - Alert when known face detected
-  - `AlertMode.ON_ALL` - Alert for all faces (known and unknown)
+  - `AlertMode.ON_ALL` - Alert for all faces
 
-- **`alert_once`** - Whether to trigger alert only once per track or continuously:
-  - `True` - Security/access control (one alert per person entry)
-  - `False` - Continuous monitoring applications
+- **`alert_once`** (bool) - Alert once per track (True) or continuously (False)
 
-- **`clip_duration`** - Length of video clips to save (in frames). Example: At 30 FPS, 100 frames = ~3.3 seconds of video.
+- **`clip_duration`** (int) - Length of video clips in frames (e.g., 100 frames ≈ 3.3 seconds at 30 FPS)
 
-- **`notification_config`** - Apprise configuration string for notification delivery (email, Slack, etc.)
+- **`notification_config`** (str) - Apprise configuration string for notification delivery
 
-- **`notification_message`** - Message template with variables: `${time}`, `${filename}`, `${url}`
+- **`notification_message`** (str) - Message template with variables: `${time}`, `${filename}`, `${url}`
 
-- **`notification_timeout_s`** - Timeout in seconds for sending notifications
-
-**Example:**
-```python
-config = degirum_face.FaceTrackerConfig(
-    alert_mode=degirum_face.AlertMode.ON_UNKNOWNS,
-    alert_once=True,
-    clip_duration=150,  # 5 seconds at 30 FPS
-    notification_config="mailto://user:pass@gmail.com",
-    notification_message="⚠️ ${time}: Unknown person detected. Video: ${filename}",
-    notification_timeout_s=15.0,
-)
-```
+- **`notification_timeout_s`** (float, optional) - Timeout in seconds for sending notifications
 
 **Apprise notification examples:**
 - Email: `"mailto://user:pass@gmail.com"`
 - Slack: `"slack://token/channel"`
 - Discord: `"discord://webhook_id/webhook_token"`
 - SMS (Twilio): `"twilio://account_sid:auth_token@from_phone/to_phone"`
-- Console: `"console://"` (for testing)
+- Console: `"console://"` (testing)
 
 See [Apprise documentation](https://github.com/caronc/apprise) for all supported services.
 
 ---
 
-### 4. Clip Storage
+### Clip Storage
 
-**Important:** Clip storage only works when `alert_mode` is not `NONE`. Video clips are automatically saved when alerts are triggered.
-
-Configuration for saving video clips to S3-compatible object storage or local filesystem.
-
-**In Python:**
-
-Storage is configured via the `clip_storage_config` parameter, which takes a `degirum_tools.ObjectStorageConfig` object:
-
-```python
-import degirum_tools
-
-# Local filesystem storage
-config = degirum_face.FaceTrackerConfig(
-    clip_storage_config=degirum_tools.ObjectStorageConfig(
-        endpoint="./clips",        # Local directory path
-        bucket="unknown_faces"      # Subdirectory name
-    ),
-    alert_mode=degirum_face.AlertMode.ON_UNKNOWNS  # Required for clip saving
-)
-
-# S3-compatible cloud storage
-config = degirum_face.FaceTrackerConfig(
-    clip_storage_config=degirum_tools.ObjectStorageConfig(
-        endpoint="s3.amazonaws.com",
-        access_key="YOUR_ACCESS_KEY",
-        secret_key="YOUR_SECRET_KEY",
-        bucket="face-tracking-clips",
-        url_expiration_s=3600       # Optional: presigned URL expiration
-    ),
-    alert_mode=degirum_face.AlertMode.ON_UNKNOWNS  # Required for clip saving
-)
-
-# Disabled (default)
-config = degirum_face.FaceTrackerConfig(
-    clip_storage_config=degirum_tools.ObjectStorageConfig(
-        endpoint="",
-        bucket=""
-    )
-)
-```
+Configuration for saving video clips to S3-compatible storage or local filesystem.
 
 **ObjectStorageConfig parameters:**
 
-- **`endpoint`** - S3-compatible storage endpoint URL (e.g., `s3.amazonaws.com`) or local directory path (e.g., `./clips`)
-- **`access_key`** - Storage access key (not needed for local storage)
-- **`secret_key`** - Storage secret key (not needed for local storage)
-- **`bucket`** - Bucket name for S3 storage or subdirectory name for local storage
-- **`url_expiration_s`** - Expiration time for presigned URLs (optional, S3 only)
-
-**Storage modes:**
-- **S3-compatible cloud storage** - Remote access, web dashboards, centralized multi-camera storage
-- **Local filesystem** - Simple setup, no cloud dependencies, clips saved to local directory
-
-**Storage disabled:** Leave `endpoint` or `bucket` empty to disable clip storage entirely.
-
-**Clip saving behavior:**
-- Clips are saved only when alerts are triggered (based on `alert_mode`)
-- Clip length is controlled by `clip_duration` parameter (in frames)
-- Each clip filename includes timestamp and trigger information
+- **`endpoint`** - S3 endpoint URL or local directory path
+- **`access_key`** - Storage access key (not needed for local)
+- **`secret_key`** - Storage secret key (not needed for local)
+- **`bucket`** - Bucket name (S3) or subdirectory name (local)
+- **`url_expiration_s`** - Presigned URL expiration time (S3 only, optional)
 
 ---
 
-### 5. Live Stream Output
+### Alerting and Storage Combinations
 
-Configure live video streaming output.
+**Important:** Both notifications and clip recording only trigger when alerts are generated. If `alert_mode=AlertMode.NONE`, no alerts are generated, so notifications and clip recording will not happen even if configured.
+
+| Alert Mode | Notifications | Clip Recording | Configuration |
+|------------|---------------|----------------|---------------|
+| Not `NONE` | ✅ Enabled | ✅ Enabled | Set `notification_config` + configure `clip_storage_config` with endpoint/bucket |
+| Not `NONE` | ✅ Enabled | ❌ Disabled | Set `notification_config` + leave `clip_storage_config` endpoint/bucket empty |
+| Not `NONE` | ❌ Disabled | ✅ Enabled | Leave `notification_config` empty + configure `clip_storage_config` with endpoint/bucket |
+| Not `NONE` | ❌ Disabled | ❌ Disabled | Leave `notification_config` empty + leave `clip_storage_config` endpoint/bucket empty |
+| `NONE` | ❌ Disabled | ❌ Disabled | No alerts generated - notifications and storage disabled regardless of configuration |
+
+---
+
+### Live Streaming
+
+Controls video output display.
 
 **Parameters:**
 
-- **`live_stream_mode`** - Live stream mode:
+- **`live_stream_mode`** - Output mode:
   - `"LOCAL"` - Display in local window
   - `"WEB"` - Stream via RTSP for web viewing
   - `"NONE"` - No live display
 
-- **`live_stream_rtsp_url`** - RTSP URL path suffix (used when mode is `"WEB"`)
-
-**Example:**
-```python
-# Local display
-config = degirum_face.FaceTrackerConfig(
-    live_stream_mode="LOCAL",
-)
-
-# Web streaming
-config = degirum_face.FaceTrackerConfig(
-    live_stream_mode="WEB",
-    live_stream_rtsp_url="camera_entrance",  # rtsp://localhost:8554/camera_entrance
-)
-
-# No display (headless)
-config = degirum_face.FaceTrackerConfig(
-    live_stream_mode="NONE",
-)
-```
+- **`live_stream_rtsp_url`** (str, optional) - RTSP URL path suffix (used when mode is `"WEB"`)
 
 ---
 
-## ReID Expiration Filter
+### ReID Expiration Filter
 
-The **ReID Expiration Filter** is a tracking-specific face filter that uses **adaptive exponential backoff** to reduce how often face embeddings are extracted for continuously tracked faces.
+Tracking-specific filter that reduces embedding extraction frequency using adaptive exponential backoff. When enabled, the interval between embedding extractions increases exponentially (1 → 2 → 4 → 8 → ...) up to the configured `reid_expiration_frames` maximum, improving performance 10-20x while maintaining accuracy.
 
-### How It Works
+Configured via `face_filters` parameter:
+- **`enable_reid_expiration_filter`** - Enable/disable (default: True)
+- **`reid_expiration_frames`** - Maximum interval in frames (default: 30)
 
-When tracking a face across video frames, the system assigns a persistent track ID. The filter adaptively increases the interval between embedding extractions for stable tracks:
-
-**Without ReID expiration filter:**
-```
-Frame 1: Detect face (track_id=5) → Extract embedding
-Frame 2: Detect face (track_id=5) → Extract embedding
-Frame 3: Detect face (track_id=5) → Extract embedding
-Frame 4: Detect face (track_id=5) → Extract embedding
-...every frame extracts embedding
-```
-
-**With ReID expiration enabled (reid_expiration_frames=30):**
-```
-Frame 1:  New face detected → Extract embedding
-Frame 2:  Same face → Extract embedding (interval: 1 frame)
-Frame 4:  Same face → Extract embedding (interval: 2 frames)
-Frame 8:  Same face → Extract embedding (interval: 4 frames)
-Frame 16: Same face → Extract embedding (interval: 8 frames)
-Frame 32: Same face → Extract embedding (interval: 16 frames)
-Frame 62: Same face → Extract embedding (interval: 30 frames, maxed out)
-Frame 92: Same face → Extract embedding (interval: 30 frames)
-...stays at 30 frame intervals
-```
-
-**How the interval grows:**
-- Starts at 1 frame for new faces
-- **Doubles each time**: 1 → 2 → 4 → 8 → 16 → ...
-- **Caps at reid_expiration_frames** (e.g., 30)
-- Stays at maximum interval for stable tracks
-
-**Result:** For a face tracked over 100 frames, extracts ~7 embeddings instead of 100 (14x reduction).
-
-### Configuration
-
-```python
-config = degirum_face.FaceTrackerConfig(
-    face_filters=degirum_face.FaceFilterConfig(
-        enable_reid_expiration_filter=True,
-        reid_expiration_frames=30  # Maximum interval between embeddings
-    )
-)
-```
-
-**In YAML:**
-```yaml
-face_filters:
-  enable_reid_expiration_filter: true
-  reid_expiration_frames: 30  # Maximum interval
-```
-
-### Tuning reid_expiration_frames
-
-This parameter sets the **maximum interval** (in frames) between embedding extractions for stable tracks:
-
-**Static scenes (office entry, security checkpoint):**
-```python
-reid_expiration_frames=60  # Maximum 60 frames (~2 sec at 30 FPS)
-# Stable faces, infrequent angle changes, can wait longer between embeddings
-```
-
-**Dynamic scenes (retail, crowded areas):**
-```python
-reid_expiration_frames=15  # Maximum 15 frames (~0.5 sec at 30 FPS)
-# People move quickly, angles change often, need more frequent embeddings
-```
-
-**Trade-off:**
-- **Higher value** = Longer maximum intervals, fewer embeddings, faster FPS, but slower to detect face angle changes
-- **Lower value** = Shorter maximum intervals, more embeddings, slower FPS, but quicker response to face movement
-
-**Recommended:** 30 frames (1 second at 30 FPS)
-
-### When Embedding Extraction Happens
-
-Embedding is extracted in these cases:
-- **New track detected** - First embedding needed to establish identity
-- **Expiration timer reached** - Based on adaptive interval (1, 2, 4, 8... up to max)
-- **Track ID re-acquired** - After track was lost, fresh embedding needed
-- **Quality filters passed after previous failure** - Retry when face quality improves
-
-### Impact on FaceRecognizer
-
-**Important:** ReID expiration filter has **no effect** on `FaceRecognizer.predict_batch()` because:
-- No persistent track IDs across batch items  
-- Each image processed independently
-- No temporal continuity to build adaptive intervals
-
-**Use only with FaceTracker** for real-time video streams with continuous tracking.
+See [ReID Expiration Filter](../../reference/face-filters.md#5-reid-expiration-filter) for complete documentation including tuning guidance and examples.
 
 ---
 
-## Python Configuration Example
+## Configuration Options
 
-Complete Python-based configuration (without YAML):
+### Option 1: Python Configuration
 
 ```python
 import degirum_face
 import degirum_tools
 
 config = degirum_face.FaceTrackerConfig(
-    # Face detection model
+    # Models (using model registry)
     face_detection_model_spec=degirum_face.get_face_detection_model_spec(
         device_type="HAILORT/HAILO8",
         inference_host_address="@cloud"
     ),
-    
-    # Face embedding model
     face_embedding_model_spec=degirum_face.get_face_embedding_model_spec(
         device_type="HAILORT/HAILO8",
         inference_host_address="@cloud"
     ),
     
-    # Database settings
+    # Database
     db_path="./face_tracking_db.lance",
-    cosine_similarity_threshold=0.6,
+    cosine_similarity_threshold=0.65,
     
     # Face filters
     face_filters=degirum_face.FaceFilterConfig(
         enable_small_face_filter=True,
-        min_face_size=50,
-        enable_zone_filter=False,
-        zone=[],  # [[x1,y1], [x2,y2], [x3,y3]] for polygon
+        min_face_size=80,
         enable_frontal_filter=True,
-        enable_shift_filter=False,
+        enable_shift_filter=True,
         enable_reid_expiration_filter=True,
-        reid_expiration_frames=30
+        reid_expiration_frames=30,
     ),
     
-    # Video source settings
-    video_source=0,  # 0 for webcam, RTSP URL, or file path
-    video_source_fps_override=0.0,  # 0 = use source FPS
-    video_source_resolution_override=(0, 0),  # (0, 0) = use source resolution
+    # Video source
+    video_source="rtsp://192.168.1.100/stream",
     
-    # Clip storage configuration
-    clip_storage_config=degirum_tools.ObjectStorageConfig(
-        endpoint="s3.amazonaws.com",  # Empty string to disable
-        access_key="YOUR_ACCESS_KEY",
-        secret_key="YOUR_SECRET_KEY",
-        bucket="my-security-footage",
-        url_expiration_s=3600
-    ),
-    
-    # Face tracking confirmation
+    # Tracking
     credence_count=4,
     
-    # Alerting and notifications
-    alert_mode=degirum_face.AlertMode.ON_UNKNOWNS,  # NONE, ON_UNKNOWNS, ON_KNOWNS, ON_ALL
+    # Alerting
+    alert_mode=degirum_face.AlertMode.ON_UNKNOWNS,
     alert_once=True,
     clip_duration=100,
-    notification_config="console://",  # Apprise notification URL
-    notification_message="${time}: Unknown person detected. Video: [${filename}](${url})",
-    notification_timeout_s=10,
     
-    # Live streaming
-    live_stream_mode="LOCAL",  # LOCAL, WEB, or NONE
-    live_stream_rtsp_url="",
+    # Clip storage
+    clip_storage_config=degirum_tools.ObjectStorageConfig(
+        endpoint="./security_clips",
+        bucket="unknown_persons"
+    ),
+    
+    # Notifications
+    notification_config="mailto://security@company.com",
+    notification_message="🚨 ${time}: Unknown person. Clip: ${filename}",
+    notification_timeout_s=10.0,
+    
+    # Live display
+    live_stream_mode="WEB",
+    live_stream_rtsp_url="security_entrance",
 )
 
 tracker = degirum_face.FaceTracker(config)
 ```
 
----
+### Option 2: YAML Configuration
 
-## YAML Configuration Structure
+The `from_yaml()` method loads configuration from YAML files, simplifying deployment and version control.
 
-FaceTracker supports complete configuration via YAML files. Here's the complete structure with all parameter groups:
+**Complete YAML structure:**
 
 ```yaml
-# Complete FaceTracker YAML Configuration Structure
-
 # Face detection model
 face_detector:
-  hardware: HAILORT/HAILO8                    # Runtime/device format
-  inference_host_address: "@cloud"            # @cloud, @local, or AI server hostname
-  model_zoo_url: degirum/hailo                # Optional: model zoo path
-  token: your_token_here                      # Optional: cloud API token
-
+  hardware: HAILORT/HAILO8
+  inference_host_address: "@cloud"
+  
 # Face embedding model
 face_embedder:
   hardware: HAILORT/HAILO8
   inference_host_address: "@cloud"
-  model_zoo_url: degirum/hailo
 
 # Database settings
 db_path: ./face_tracking_db.lance
-cosine_similarity_threshold: 0.6
+cosine_similarity_threshold: 0.65
 
-# Face filters (inherited from FaceRecognizer)
+# Face filters
 face_filters:
   enable_small_face_filter: true
-  min_face_size: 50
-  enable_zone_filter: false
-  zone: [[x1,y1], [x2,y2], [x3,y3]]          # Polygon points (min 3)
+  min_face_size: 80
   enable_frontal_filter: true
-  enable_shift_filter: false
+  enable_shift_filter: true
   enable_reid_expiration_filter: true
   reid_expiration_frames: 30
 
-# Video source settings
-video_source: 0                               # 0 for webcam, RTSP URL, or file path
-video_source_fps_override: 0.0                # Override FPS (0 = use source FPS)
-video_source_resolution_override: [0, 0]      # Override resolution (0 = use source)
+# Video source
+video_source: "rtsp://192.168.1.100/stream"
+video_source_fps_override: 0.0              # 0 = use source FPS (no override)
+video_source_resolution_override: [0, 0]    # [0, 0] = use source resolution (no override)
 
-# Clip storage configuration
-storage:
-  endpoint: ""                                # S3 endpoint (empty = disabled)
-  access_key: ""                              # S3 access key
-  secret_key: ""                              # S3 secret key
-  bucket: ""                                  # S3 bucket name
-  url_expiration_s: 3600                      # Presigned URL expiration
+# Tracking
+credence_count: 4
 
-# Face tracking confirmation
-credence_count: 4                             # Frames to confirm a face
-
-# Alerting and notifications
+# Alerting
 alerts:
-  alert_mode: ON_UNKNOWNS                     # NONE, ON_UNKNOWNS, ON_KNOWNS, ON_ALL
-  alert_once: true                            # Alert once per track vs every frame
-  clip_duration: 100                          # Clip length in frames
-  notification_config: "console://"           # Apprise notification URL
-  notification_message: "${time}: Unknown person detected. Video: [${filename}](${url})"
-  notification_timeout_s: 10                  # Notification timeout (optional)
+  alert_mode: ON_UNKNOWNS                   # NONE, ON_UNKNOWNS, ON_KNOWNS, ON_ALL
+  alert_once: true
+  clip_duration: 100
+  notification_config: "mailto://security@company.com"
+  notification_message: "🚨 ${time}: Unknown person. Clip: ${filename}"
+  notification_timeout_s: 10.0
+
+# Clip storage
+storage:
+  endpoint: "./security_clips"
+  access_key: ""
+  secret_key: ""
+  bucket: "unknown_persons"
+  url_expiration_s: 3600
 
 # Live streaming
 live_stream:
-  mode: LOCAL                                 # LOCAL, WEB, or NONE
-  rtsp_url: face_tracking                     # RTSP path suffix (for WEB mode)
+  mode: WEB                                 # LOCAL, WEB, NONE
+  rtsp_url: "security_entrance"
 ```
 
 **Loading from YAML:**
@@ -466,17 +272,17 @@ tracker = degirum_face.FaceTracker(config)
 
 ---
 
-## Complete Example
+## Configuration Examples
 
-Production-ready security monitoring system:
+### Example 1: Security Monitoring
+
+Monitor RTSP camera, alert on unknown faces, save clips, send email:
 
 ```python
 import degirum_face
 import degirum_tools
 
-# Configure face tracker
 config = degirum_face.FaceTrackerConfig(
-    # Models and hardware
     face_detection_model_spec=degirum_face.get_face_detection_model_spec(
         device_type="HAILORT/HAILO8",
         inference_host_address="@cloud"
@@ -485,65 +291,79 @@ config = degirum_face.FaceTrackerConfig(
         device_type="HAILORT/HAILO8",
         inference_host_address="@cloud"
     ),
-    
-    # Database and matching
-    db_path="./security_face_db.lance",
+    db_path="./security_db.lance",
     cosine_similarity_threshold=0.65,
-    
-    # Face quality filters
-    face_filters=degirum_face.FaceFilterConfig(
-        enable_small_face_filter=True,
-        min_face_size=80,
-        enable_frontal_filter=True,
-        enable_shift_filter=True,
-        enable_reid_expiration_filter=True,
-        reid_expiration_frames=30,
-    ),
-    
-    # Tracking and alerting
+    video_source="rtsp://192.168.1.100/stream",
     credence_count=4,
     alert_mode=degirum_face.AlertMode.ON_UNKNOWNS,
     alert_once=True,
-    clip_duration=100,
-    
-    # Clip storage
+    clip_duration=150,
     clip_storage_config=degirum_tools.ObjectStorageConfig(
         endpoint="./security_clips",
-        bucket="unknown_persons"
+        bucket="unknowns"
     ),
-    
-    # Notifications
     notification_config="mailto://security@company.com",
-    notification_message="🚨 ${time}: Unknown person detected. Clip: ${filename}",
-    notification_timeout_s=10.0,
-    
-    # Video source
-    video_source="rtsp://192.168.1.100/stream",
-    
-    # Live display
+    notification_message="⚠️ Unknown person at ${time}",
     live_stream_mode="WEB",
-    live_stream_rtsp_url="security_entrance",
+    live_stream_rtsp_url="security_feed",
 )
 
-# Start tracking
 tracker = degirum_face.FaceTracker(config)
-composition, watchdog = tracker.start_face_tracking_pipeline()
-
-# Run continuously
-print("Face tracking started. Press Ctrl+C to stop.")
-composition.wait()
 ```
 
-This configuration:
-- ✅ Tracks faces from RTSP camera
-- ✅ Uses Hailo-8 hardware for acceleration
-- ✅ Filters low-quality faces (small, profile, shifted)
-- ✅ Reduces compute with ReID expiration (30 frames)
-- ✅ Alerts on unknown faces after 4 frame confirmation
-- ✅ Saves 100-frame clips of unknown faces
-- ✅ Sends email notifications
-- ✅ Streams annotated video to web
+### Example 2: VIP Access Control
 
----
+Alert when known VIPs appear, display locally:
 
-**Next:** [Methods Guide](face_tracker_methods.md) - Learn about all FaceTracker methods and workflows
+```python
+config = degirum_face.FaceTrackerConfig(
+    face_detection_model_spec=degirum_face.get_face_detection_model_spec(
+        device_type="HAILORT/HAILO8",
+        inference_host_address="@cloud"
+    ),
+    face_embedding_model_spec=degirum_face.get_face_embedding_model_spec(
+        device_type="HAILORT/HAILO8",
+        inference_host_address="@cloud"
+    ),
+    db_path="./vip_database.lance",
+    video_source=0,  # Webcam
+    alert_mode=degirum_face.AlertMode.ON_KNOWNS,
+    notification_config="slack://token/channel",
+    notification_message="VIP arrived: ${attributes}",
+    live_stream_mode="LOCAL",
+)
+
+tracker = degirum_face.FaceTracker(config)
+```
+
+### Example 3: High-Traffic Filtering
+
+Reduce false positives with strict quality filters:
+
+```python
+config = degirum_face.FaceTrackerConfig(
+    face_detection_model_spec=degirum_face.get_face_detection_model_spec(
+        device_type="HAILORT/HAILO8",
+        inference_host_address="@cloud"
+    ),
+    face_embedding_model_spec=degirum_face.get_face_embedding_model_spec(
+        device_type="HAILORT/HAILO8",
+        inference_host_address="@cloud"
+    ),
+    db_path="./retail_db.lance",
+    face_filters=degirum_face.FaceFilterConfig(
+        enable_small_face_filter=True,
+        min_face_size=100,  # Larger minimum
+        enable_frontal_filter=True,
+        enable_shift_filter=True,
+        enable_reid_expiration_filter=True,
+        reid_expiration_frames=15,  # More frequent for dynamic scene
+    ),
+    video_source="rtsp://retail-camera/stream",
+    credence_count=8,  # Higher confirmation threshold
+    alert_mode=degirum_face.AlertMode.ON_ALL,
+    live_stream_mode="LOCAL",
+)
+
+tracker = degirum_face.FaceTracker(config)
+```

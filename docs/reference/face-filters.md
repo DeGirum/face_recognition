@@ -257,7 +257,81 @@ photo_filters = degirum_face.FaceFilterConfig(
 
 **Note:** This filter is specific to `FaceTracker` and video tracking workflows. It does not affect `FaceRecognizer` which processes static images.
 
-See [Face Tracker Configuration](../guides/face-tracker/configuration.md#reid-filter) for details.
+Reduces embedding extraction frequency using **adaptive exponential backoff** for continuously tracked faces.
+
+#### Configuration
+
+```python
+filters = degirum_face.FaceFilterConfig(
+    enable_reid_expiration_filter=True,
+    reid_expiration_frames=30  # Maximum interval
+)
+```
+
+#### Parameters
+
+- **`enable_reid_expiration_filter`** (bool) - Enable/disable the ReID expiration filter (default: True)
+- **`reid_expiration_frames`** (int) - Maximum interval in frames between embedding extractions for stable tracks (default: 30)
+
+#### How it Works
+
+When enabled, the filter adaptively increases the interval between embedding extractions for continuously tracked faces:
+
+```
+Frame 1:  New face → Extract embedding (interval: 1 frame)
+Frame 2:  Same face → Extract embedding (interval: 1 frame)
+Frame 4:  Same face → Extract embedding (interval: 2 frames)
+Frame 8:  Same face → Extract embedding (interval: 4 frames)
+Frame 16: Same face → Extract embedding (interval: 8 frames)
+Frame 32: Same face → Extract embedding (interval: 16 frames)
+Frame 62: Same face → Extract embedding (interval: 30 frames, maxed out at reid_expiration_frames)
+Frame 92: Same face → Extract embedding (interval: 30 frames)
+...stays at reid_expiration_frames interval
+```
+
+**Result:** For a face tracked over 100 frames, extracts ~7 embeddings instead of 100 (14x reduction).
+
+#### When to Use
+
+- Real-time video tracking with `FaceTracker`
+- Reduce computational cost for stable, continuously tracked faces
+- Maintain accuracy while improving performance
+
+#### Tuning `reid_expiration_frames`
+
+- **Static scenes** (office entry, checkpoint): `reid_expiration_frames=60` - Stable faces, can wait longer between embeddings
+- **Dynamic scenes** (retail, crowds): `reid_expiration_frames=15` - Quick movements, need more frequent updates
+- **Recommended default:** `30` frames (~1 second at 30 FPS)
+
+#### When Embedding Extraction Happens
+
+- New track detected (first frame)
+- Expiration timer reached (adaptive interval: 1, 2, 4, 8... up to max)
+- Track ID re-acquired after loss
+- Quality filters passed after previous failure
+
+#### Trade-offs
+
+- **Higher value (60+):** Fewer embeddings, faster FPS, slower response to face angle changes
+- **Lower value (10-20):** More embeddings, slower FPS, quicker response to movement
+
+#### Example
+
+```python
+# Static scene - maximize performance
+static_filters = degirum_face.FaceFilterConfig(
+    enable_reid_expiration_filter=True,
+    reid_expiration_frames=60  # Wait longer between embeddings
+)
+
+# Dynamic scene - maintain responsiveness  
+dynamic_filters = degirum_face.FaceFilterConfig(
+    enable_reid_expiration_filter=True,
+    reid_expiration_frames=15  # More frequent updates
+)
+```
+
+**Important:** This filter only works with `FaceTracker` for continuous video streams. It has no effect on `FaceRecognizer.predict_batch()` since there are no persistent track IDs across batch items.
 
 ---
 

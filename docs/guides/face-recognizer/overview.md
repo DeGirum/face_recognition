@@ -13,7 +13,7 @@ Choose `FaceRecognizer` when you need to:
 - Build a face database from images
 - Work without real-time tracking requirements
 
-**For video with persistent face tracking**, use [FaceTracker](../face-tracker/quickstart.md) instead - it maintains face identities across frames and supports real-time alerts.
+**For video with persistent face tracking**, use [FaceTracker](../face-tracker/overview.md) instead - it maintains face identities across frames and supports real-time alerts.
 
 ## Core Concepts
 
