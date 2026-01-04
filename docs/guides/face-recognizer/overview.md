@@ -1,4 +1,6 @@
-# Face Recognizer Overview
+# FaceRecognizer Overview
+
+Complete guide to understanding when and how to use `FaceRecognizer` for face recognition tasks.
 
 ## What is FaceRecognizer?
 
@@ -35,12 +37,12 @@ face_recognizer = degirum_face.FaceRecognizer(config)
 ```
 See [Configuration Guide](configuration.md) for all options.
 
-### Methods
+## Methods
 
 `FaceRecognizer` provides methods for enrollment, prediction, and database management:
 
-- **`enroll_image()`** / **`enroll_batch()`** - Add faces to database
-- **`predict()`** / **`predict_batch()`** - Recognize faces in images/video
+- **[enroll_image()](methods.md#enroll_image)** / **[enroll_batch()](methods.md#enroll_batch)** - Add faces to database
+- **[predict()](methods.md#predict)** / **[predict_batch()](methods.md#predict_batch)** - Recognize faces in images/video
 
 See [Methods Reference](methods.md) for complete API documentation with examples.
 

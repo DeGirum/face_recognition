@@ -202,7 +202,7 @@ tracker = degirum_face.FaceTracker(config)
 
 ### Option 2: YAML Configuration
 
-The `from_yaml()` method loads configuration from YAML files, simplifying deployment and version control.
+`FaceTrackerConfig` can be initialized from a YAML file or string using the `from_yaml()` method. This approach separates configuration from code, making it easier to version control settings, share configurations across teams, and maintain different configs for development, staging, and production environments.
 
 **Complete YAML structure:**
 
@@ -261,7 +261,7 @@ live_stream:
   rtsp_url: "security_entrance"
 ```
 
-**Loading from YAML:**
+#### Loading from YAML
 
 ```python
 import degirum_face
@@ -269,6 +269,40 @@ import degirum_face
 config, _ = degirum_face.FaceTrackerConfig.from_yaml(yaml_file="face_tracking.yaml")
 tracker = degirum_face.FaceTracker(config)
 ```
+
+**Returns:**
+- `config` - Initialized `FaceTrackerConfig` object
+- `settings` - Raw dictionary (useful for debugging)
+
+#### Loading from YAML String
+
+```python
+import degirum_face
+
+yaml_string = """
+face_detector:
+  hardware: HAILORT/HAILO8
+  inference_host_address: "@cloud"
+face_embedder:
+  hardware: HAILORT/HAILO8
+  inference_host_address: "@cloud"
+db_path: ./face_tracking_db.lance
+video_source: 0
+alerts:
+  alert_mode: ON_UNKNOWNS
+"""
+
+config, _ = degirum_face.FaceTrackerConfig.from_yaml(yaml_str=yaml_string)
+tracker = degirum_face.FaceTracker(config)
+```
+
+#### Benefits of YAML
+
+- **Clean separation** - Config separate from code
+- **Easy modification** - Change hardware without editing code
+- **Version control** - Track config changes in git
+- **Team collaboration** - Share standardized configs
+- **Multiple environments** - dev.yaml, staging.yaml, prod.yaml
 
 ---
 

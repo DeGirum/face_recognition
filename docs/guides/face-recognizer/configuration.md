@@ -1,4 +1,4 @@
-# Face Recognizer Configuration
+# FaceRecognizer Configuration
 
 Complete guide to configuring `FaceRecognizer` for your specific hardware, deployment environment, and use case.
 
