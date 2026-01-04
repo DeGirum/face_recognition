@@ -1,7 +1,5 @@
 # FaceTracker Configuration
 
-Complete guide to configuring `FaceTracker` for production video surveillance applications.
-
 ## Configuration Inheritance
 
 `FaceTrackerConfig` extends `FaceRecognizerConfig` and inherits all base settings:
@@ -86,13 +84,11 @@ See [Apprise documentation](https://github.com/caronc/apprise) for all supported
 
 Configuration for saving video clips to S3-compatible storage or local filesystem.
 
-**ObjectStorageConfig parameters:**
-
-- **`endpoint`** - S3 endpoint URL or local directory path
-- **`access_key`** - Storage access key (not needed for local)
-- **`secret_key`** - Storage secret key (not needed for local)
-- **`bucket`** - Bucket name (S3) or subdirectory name (local)
-- **`url_expiration_s`** - Presigned URL expiration time (S3 only, optional)
+See [Object Storage Configuration Reference](../../reference/storage-config.md) for complete documentation including:
+- Parameters (endpoint, bucket, access_key, etc.)
+- Storage backend examples (AWS S3, MinIO, local filesystem)
+- Environment-specific configurations
+- Best practices
 
 ---
 

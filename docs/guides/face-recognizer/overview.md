@@ -1,7 +1,5 @@
 # FaceRecognizer Overview
 
-Complete guide to understanding when and how to use `FaceRecognizer` for face recognition tasks.
-
 ## What is FaceRecognizer?
 
 `FaceRecognizer` processes images and video frames independently without temporal tracking. It detects and identifies faces in single images, image batches, or video streams (frame-by-frame via `predict_batch()`).

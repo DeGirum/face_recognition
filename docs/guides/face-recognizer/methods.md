@@ -1,7 +1,7 @@
 # FaceRecognizer Methods
 
-Complete API reference for all `FaceRecognizer` methods.
 **Note:** Examples in this guide assume you have already configured `FaceRecognizerConfig` with model specifications. See [Configuration Guide](configuration.md) for complete setup details.
+
 ## Methods Overview
 
 | Method | Purpose | Input | Best For |

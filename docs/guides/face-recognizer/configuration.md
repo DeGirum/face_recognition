@@ -1,7 +1,5 @@
 # FaceRecognizer Configuration
 
-Complete guide to configuring `FaceRecognizer` for your specific hardware, deployment environment, and use case.
-
 ## FaceRecognizerConfig Anatomy
 
 `FaceRecognizer` is configured entirely through a `FaceRecognizerConfig` object with these components:

@@ -1,10 +1,8 @@
 # FaceTracker Methods
 
-Complete reference for all `FaceTracker` methods.
-
 **Note:** Examples in this guide assume you have already configured `FaceTrackerConfig` with model specifications. See [Configuration Guide](configuration.md) for complete setup details.
 
-## Method Overview
+## Methods Overview
 
 | Method | Purpose | Use Case |
 |--------|---------|----------|

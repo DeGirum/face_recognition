@@ -1,7 +1,5 @@
 # Face Filters Reference
 
-Complete reference for face quality filtering in `degirum-face`.
-
 ## Overview
 
 Face filters act as **quality gates** that skip low-quality detections before running the expensive embedding model. Proper filtering improves both performance and accuracy.
