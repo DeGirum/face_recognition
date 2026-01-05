@@ -1,30 +1,99 @@
 # Basic Concepts
 
-## Face Recognition vs. Face Tracking
+## What Can You Do With degirum-face?
 
-`degirum-face` provides two main approaches:
+`degirum-face` enables face recognition workflows across images and video:
 
-| | **FaceRecognizer** | **FaceTracker** |
-|---|---|---|
-| **Use Case** | Static images or batches | Video streams or files |
-| **Temporal Awareness** | None (each image is independent) | Tracks faces across frames |
-| **Real-Time Events** | No | Yes (alerts, streaming) |
-| **Primary Methods** | `predict()`, `predict_batch()`, `enroll_image()` | `start_face_tracking_pipeline()`, `find_faces_in_file()` |
-| **Best For** | Photo albums, batch processing | Surveillance, video analysis |
+- **Detect and identify** faces in photos, video files, and live streams
+- **Enroll faces** into a database with custom attributes (names, metadata)
+- **Track faces** across video frames with persistent IDs
+- **Real-time alerts** when specific people are detected
+- **Batch processing** for large image collections
+- **Automated clip extraction** for detected faces
 
-**When to use FaceRecognizer:**
-- Processing photos or image collections
+All with minimal code and flexible deployment options.
+
+## Deployment Options
+
+### Where Can It Run?
+
+The `inference_host_address` parameter controls where your models execute:
+
+| Option | Description | Best For |
+|--------|-------------|----------|
+| **Cloud (`@cloud`)** | Models run on DeGirum's cloud servers | Quick start, experimentation, trying different hardware |
+| **Local (`@local`)** | Models run on your machine | Production, lowest latency, full privacy, offline operation |
+| **AI Server** | Models run on a dedicated server (e.g., `server-ip:port`) | Centralized GPU/accelerator resources on your network |
+
+**Cloud** is ideal for getting started quickly without hardware setup. **Local** gives you complete control and privacy. **AI Server** lets you share powerful hardware across multiple applications. See [AI Server Setup Guide](https://docs.degirum.com/pysdk/user-guide-pysdk/setting-up-an-ai-server) for server deployment.
+
+### What Hardware Is Supported?
+
+The `device_type` parameter specifies which accelerator to use. Works on CPU, GPU, and a wide range of edge AI accelerators:
+
+- **Hailo** (HAILORT/HAILO8, HAILORT/HAILO8L)
+- **Axelera** (AXELERA/METIS)
+- **DEEPX** (DEEPX/M1A)
+- **Intel** (OPENVINO/CPU, OPENVINO/GPU, OPENVINO/NPU)
+- **NVIDIA** (TENSORRT/GPU)
+- **Rockchip** (RKNN/RK3588)
+- **Google** (TFLITE/EDGETPU)
+- **DeGirum** (N2X/ORCA1)
+
+See [DeGirum PySDK Installation](https://docs.degirum.com/pysdk/installation) for platform requirements and [Runtimes & Drivers](https://docs.degirum.com/pysdk/runtimes-and-drivers) for hardware-specific setup.
+
+### Discovering Available Hardware
+
+Use helper functions to check what's supported and available before configuring:
+
+```python
+# See all supported hardware platforms
+supported = degirum_face.model_registry.get_hardware()
+
+# Check what's available on cloud or local
+available = degirum_face.get_system_hw("@cloud")
+
+# Find compatible hardware you can use right now
+compatible = degirum_face.get_compatible_hw("@cloud")
+```
+
+## Model Registry
+
+`degirum-face` includes a curated **model registry** - a collection of pre-optimized face detection and embedding models for various hardware platforms. The registry automatically selects the best model for your chosen hardware, eliminating the need to manually pick models or tune parameters.
+
+Helper functions like `get_face_detection_model_spec()` and `get_face_embedding_model_spec()` query this registry to get optimized models for your hardware. For complete control, you can also provide custom models outside the registry.
+
+## Core Components
+
+`degirum-face` provides four main components:
+
+**FaceRecognizer** - For static images and batch processing
+- Process photos or image collections
+- Enroll faces into the database
 - One-time batch recognition
-- Building a face database from images
 
-**When to use FaceTracker:**
-- Live camera feeds or video files
-- Tracking the same person across frames
-- Real-time alerts and clip extraction
+**FaceTracker** - For video streams and real-time monitoring
+- Monitor live camera feeds or video files
+- Track faces across frames with persistent IDs
+- Generate real-time alerts and automated clip extraction
 
-## Face Recognition Pipeline
+**FaceClipManager** - For managing saved video clips
+- List and retrieve video clips from object storage (S3 or local)
+- Access clips recorded by FaceTracker alerts
+- Download and manage alert recordings
 
-Every face recognition operation goes through these stages:
+**Database** - For managing the face recognition database
+- Query and search enrolled faces
+- Add, update, or delete face records
+- Direct access to LanceDB storage for advanced operations
+
+---
+
+Before diving into the component-specific guides, let's understand the underlying recognition pipeline that powers all these tools.
+
+## The Recognition Pipeline
+
+Both FaceRecognizer and FaceTracker use the same core pipeline for processing faces:
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌──────────────┐     ┌──────────────┐
@@ -61,13 +130,15 @@ Compares the embedding against enrolled faces using cosine similarity.
 **Database:** LanceDB (vector database)  
 **Output:** Identity + similarity score
 
-## Model Registry
+### Additional Capabilities
 
-`degirum-face` includes a curated **model registry** - a collection of pre-optimized face detection and embedding models for various hardware platforms. The registry automatically selects the best model for your chosen hardware, so you don't need to manually pick models or tune parameters.
+**Face Quality Filters** (optional) - Applied after detection to ensure only high-quality faces are processed. Filters include minimum size, pose angle, blur detection, brightness checks, and more. See [Face Filters Reference](../reference/face-filters.md).
 
-Helper functions like `get_face_detection_model_spec()` and `get_face_embedding_model_spec()` query this registry to get optimized models for your hardware. For complete control, you can also provide custom models outside the registry.
+**Tracking** (FaceTracker only) - Maintains persistent IDs for faces across video frames using visual tracking and re-identification. Enables features like trajectory tracking, adaptive embedding extraction, and temporal consistency.
 
-## Face Recognition Results
+**Alert & Recording** (FaceTracker only) - Triggers events when known/unknown faces are detected and automatically records video clips to object storage (S3 or local filesystem).
+
+## Understanding Results
 
 Results are returned as `FaceRecognitionResult` objects containing detected faces with their identities and metadata:
 
@@ -89,48 +160,15 @@ for face in result.faces:
 
 See [FaceRecognitionResult Reference](../reference/face-recognition-result.md) for complete property list and usage examples.
 
-## Deployment & Hardware
+---
 
-### Inference Location (inference_host_address)
+## Next Steps
 
-The `inference_host_address` parameter controls where your models run:
+Now that you understand deployment options, hardware support, the core components, and how the recognition pipeline works, you're ready to start using degirum-face.
 
-| Option | Use Case | Best For |
-|--------|----------|----------|
-| **Cloud (`@cloud`)** | Experimentation | Try any hardware without local setup |
-| **Local (`@local`)** | Production | Lowest latency, full privacy, offline |
-| **AI Server** | Centralized | Shared GPU/accelerator resources on your network |
-
-
-**Cloud** runs models on DeGirum's servers, **Local** runs on your machine, and **AI Server** runs on a dedicated inference server you set up. See [AI Server Setup Guide](https://docs.degirum.com/pysdk/user-guide-pysdk/setting-up-an-ai-server) for server deployment.
-
-### Hardware Accelerators (device_type)
-
-Works on CPU, GPU, and a wide range of edge AI accelerators. The `device_type` parameter specifies which hardware to use:
-
-- **Hailo** (HAILORT/HAILO8, HAILORT/HAILO8L)
-- **Axelera** (AXELERA/METIS)
-- **DEEPX** (DEEPX/M1A)
-- **Intel** (OPENVINO/CPU, OPENVINO/GPU, OPENVINO/NPU)
-- **NVIDIA** (TENSORRT/GPU)
-- **Rockchip** (RKNN/RK3588)
-- **Google** (TFLITE/EDGETPU)
-- **DeGirum** (N2X/ORCA1)
-
-See [DeGirum PySDK Installation](https://docs.degirum.com/pysdk/installation) for requirements and [Runtimes & Drivers](https://docs.degirum.com/pysdk/runtimes-and-drivers) for hardware setup.
-
-### Discovery
-
-`degirum-face` provides helper functions to discover what hardware is supported and available. Use these to check compatibility before configuring your models.
-
-```python
-# See what's supported
-supported = degirum_face.model_registry.get_hardware()
-
-# See what's available on cloud/local
-available = degirum_face.get_system_hw("@cloud")
-
-# Find what you can use right now
-compatible = degirum_face.get_compatible_hw("@cloud")
-```
+**Choose your path:**
+- **Process images or batches** → [FaceRecognizer Guide](../guides/face-recognizer/overview.md)
+- **Monitor video streams** → [FaceTracker Guide](../guides/face-tracker/overview.md)
+- **Manage video clips** → [FaceClipManager Guide](../guides/face-clip-manager/overview.md)
+- **Query the database** → [Database Guide](../guides/database/overview.md)
 
