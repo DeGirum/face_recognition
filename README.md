@@ -85,24 +85,24 @@ See [examples/](examples) for all available examples.
 ### Quick Links
 
 **Getting Started**
-- [Quick Start](docs/getting-started/quickstart.md) - Your first face recognition in 5 minutes
+- [Installation & Setup](docs/getting-started/installation.md) - Get up and running
 - [Basic Concepts](docs/getting-started/basic-concepts.md) - Core concepts and terminology
 
 **Face Recognizer (Images & Batches)**
 - [Overview](docs/guides/face-recognizer/overview.md) - When to use and key concepts
 - [Configuration](docs/guides/face-recognizer/configuration.md) - Models, hardware, and filters
 - [Methods & API](docs/guides/face-recognizer/methods.md) - Complete API reference
-- [Deployment](docs/guides/face-recognizer/deployment.md) - Cloud, local, and edge deployment
 
 **Face Tracker (Video & Streams)**
-- [Quick Start](docs/guides/face-tracker/quickstart.md) - Real-time video tracking
+- [Overview](docs/guides/face-tracker/overview.md) - Real-time video tracking
 - [Configuration](docs/guides/face-tracker/configuration.md) - Video sources, alerts, clips
 - [Methods](docs/guides/face-tracker/methods.md) - All methods with workflows
 
 **Reference**
+- [Face Data Classes](docs/reference/face-recognition-result.md) - FaceAttributes and FaceRecognitionResult
 - [Face Filters](docs/reference/face-filters.md) - Quality filtering options
-- [YAML Config](docs/reference/yaml-config.md) - Complete YAML reference
+- [Object Storage](docs/reference/storage-config.md) - S3 and local clip storage
 
 ## License
-See [LICENSE](LICENSE#L1) for license details.
+See [LICENSE](LICENSE) for license details.
 

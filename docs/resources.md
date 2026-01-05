@@ -46,7 +46,7 @@ Ensure the database path is accessible and you have write permissions. LanceDB c
 1. Check the relevant guide for your component:
    - [Face Recognizer](guides/face-recognizer/overview.md)
    - [Face Tracker](guides/face-tracker/overview.md)
-   - [Clip Manager](guides/face-clip-manager/overview.md)
+   - [Face Clip Manager](guides/face-clip-manager/overview.md)
    - [Database](guides/database/overview.md)
 
 2. Review [Basic Concepts](getting-started/basic-concepts.md) for terminology and architecture

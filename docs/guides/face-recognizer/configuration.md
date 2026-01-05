@@ -90,8 +90,8 @@ embedding_spec = degirum_face.get_face_embedding_model_spec(
 ```
 
 **Parameters:**
-- `device_type` - Hardware accelerator (see [Basic Concepts](../../getting-started/basic-concepts.md#hardware-accelerators-device_type) for all options)
-- `inference_host_address` - Inference location: `@cloud`, `@local`, or AI server address (see [Basic Concepts](../../getting-started/basic-concepts.md#inference-location-inference_host_address))
+- `device_type` - Hardware accelerator (see [Basic Concepts](../../getting-started/basic-concepts.md#what-hardware-is-supported) for all options)
+- `inference_host_address` - Inference location: `@cloud`, `@local`, or AI server address (see [Basic Concepts](../../getting-started/basic-concepts.md#where-can-it-run))
 
 ### Option 2: Bring Your Own Models
 

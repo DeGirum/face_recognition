@@ -15,7 +15,7 @@
 * [Face Tracker](guides/face-tracker/overview.md)
   * [Configuration](guides/face-tracker/configuration.md)
   * [Methods](guides/face-tracker/methods.md)
-* [Clip Manager](guides/face-clip-manager/overview.md)
+* [Face Clip Manager](guides/face-clip-manager/overview.md)
   * [Configuration](guides/face-clip-manager/configuration.md)
   * [Methods](guides/face-clip-manager/methods.md)
 * [Database](guides/database/overview.md)
