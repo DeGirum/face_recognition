@@ -1,7 +1,5 @@
 # Installation & Setup
 
-Guide to installing and setting up `degirum-face`.
-
 ## Prerequisites
 
 - **Python & OS Requirements:** See [DeGirum PySDK Documentation](https://docs.degirum.com/pysdk/installation)

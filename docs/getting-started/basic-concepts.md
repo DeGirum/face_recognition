@@ -1,7 +1,5 @@
 # Basic Concepts
 
-Core concepts to understand when working with `degirum-face`.
-
 ## Face Recognition vs. Face Tracking
 
 `degirum-face` provides two main approaches:
