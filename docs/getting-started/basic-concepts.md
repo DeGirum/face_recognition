@@ -132,7 +132,7 @@ Compares the embedding against enrolled faces using cosine similarity.
 
 ### Additional Capabilities
 
-**Face Quality Filters** (optional) - Applied after detection to ensure only high-quality faces are processed. Filters include minimum size, pose angle, blur detection, brightness checks, and more. See [Face Filters Reference](../reference/face-filters.md).
+**Face Quality Filters** (optional) - Applied after detection to ensure only high-quality faces are processed. Filters include minimum size, pose angle, and more. See [Face Filters Reference](../reference/face-filters.md).
 
 **Tracking** (FaceTracker only) - Maintains persistent IDs for faces across video frames using visual tracking and re-identification. Enables features like trajectory tracking, adaptive embedding extraction, and temporal consistency.
 
