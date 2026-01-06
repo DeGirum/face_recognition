@@ -2,7 +2,7 @@
 
 ## Overview
 
-Face filters act as **quality gates** that skip low-quality detections before running the expensive embedding model. Proper filtering improves both performance and accuracy.
+Face filters act as **quality gates** that skip low-quality detections before running the embedding model. Proper filtering improves both accuracy and performance by avoiding incorrect results (e.g., computing embeddings for non-frontal faces would incorrectly identify them as unknown persons) and reducing unnecessary computation.
 
 ### Why Use Filters?
 
@@ -12,7 +12,7 @@ Not every detected face should be processed:
 - **Poor framing** - Faces cut off at edges produce unreliable embeddings
 - **Outside region of interest** - Ignore faces in irrelevant areas
 
-Filters prevent wasted compute and improve result quality.
+Filters improve result quality and prevent wasted compute.
 
 ## FaceFilterConfig
 
@@ -59,14 +59,15 @@ filters = degirum_face.FaceFilterConfig(
 
 #### Parameters
 
-- **`enable_small_face_filter`** (bool) - Enable/disable the filter
-- **`min_face_size`** (int) - Minimum size in pixels for the shorter side of the bounding box
+- **`enable_small_face_filter`** (bool) - Enable/disable the filter (default: False)
+- **`min_face_size`** (int) - Minimum size in pixels for the shorter side of the bounding box (default: 0)
 
 #### When to Use
 
 - Processing images with varying camera distances
 - Ignore distant/background people
 - Improve accuracy by filtering unreliable small detections
+- **Access control systems:** Set `min_face_size` to 2/3 of frame size to trigger recognition only when a person is very close to the camera, eliminating issues with multiple people in frame and ambiguous triggering timing
 
 #### Trade-offs
 
@@ -115,8 +116,8 @@ filters = degirum_face.FaceFilterConfig(
 
 #### Parameters
 
-- **`enable_zone_filter`** (bool) - Enable/disable the filter
-- **`zone`** (list of [x, y]) - Polygon vertices defining the region of interest
+- **`enable_zone_filter`** (bool) - Enable/disable the filter (default: False)
+- **`zone`** (list of [x, y]) - Polygon vertices defining the region of interest. Can be any polygon with 3 or more points (triangle, quadrilateral, pentagon, etc.), not limited to rectangles
 
 #### How It Works
 
@@ -164,7 +165,7 @@ filters = degirum_face.FaceFilterConfig(
 
 #### Parameters
 
-- **`enable_frontal_filter`** (bool) - Enable/disable the filter
+- **`enable_frontal_filter`** (bool) - Enable/disable the filter (default: False)
 
 #### How It Works
 
@@ -216,11 +217,11 @@ filters = degirum_face.FaceFilterConfig(
 
 #### Parameters
 
-- **`enable_shift_filter`** (bool) - Enable/disable the filter
+- **`enable_shift_filter`** (bool) - Enable/disable the filter (default: False)
 
 #### How It Works
 
-Rejects faces where facial keypoints are clustered to one side of the bounding box (indicates face is cut off or poorly framed).
+Rejects faces where all 5 facial keypoints are clustered to one side of the bounding box - either all in the left/right half (horizontal) or all in the top/bottom half (vertical). This indicates the face is cut off or poorly framed.
 
 #### When to Use
 
@@ -268,8 +269,8 @@ filters = degirum_face.FaceFilterConfig(
 
 #### Parameters
 
-- **`enable_reid_expiration_filter`** (bool) - Enable/disable the ReID expiration filter (default: True)
-- **`reid_expiration_frames`** (int) - Maximum interval in frames between embedding extractions for stable tracks (default: 30)
+- **`enable_reid_expiration_filter`** (bool) - Enable/disable the ReID expiration filter (default: False)
+- **`reid_expiration_frames`** (int) - Maximum interval in frames between embedding extractions for stable tracks (default: 10)
 
 #### How It Works
 
@@ -299,7 +300,7 @@ Frame 92: Same face → Extract embedding (interval: 30 frames)
 
 - **Static scenes** (office entry, checkpoint): `reid_expiration_frames=60` - Stable faces, can wait longer between embeddings
 - **Dynamic scenes** (retail, crowds): `reid_expiration_frames=15` - Quick movements, need more frequent updates
-- **Recommended default:** `30` frames (~1 second at 30 FPS)
+- **Recommended:** `30` frames (~1 second at 30 FPS) for balanced performance. Default is `10` frames
 
 #### When Embedding Extraction Happens
 
@@ -405,22 +406,6 @@ config = degirum_face.FaceRecognizerConfig(
     db_path="./face_db.lance",
     face_filters=filters,
 )
-```
-
-### YAML Configuration
-
-```yaml
-face_filters:
-  enable_frontal_filter: true
-  enable_small_face_filter: true
-  min_face_size: 60
-  enable_shift_filter: true
-  enable_zone_filter: true
-  zone:
-    - [100, 100]
-    - [500, 100]
-    - [500, 400]
-    - [100, 400]
 ```
 
 ---

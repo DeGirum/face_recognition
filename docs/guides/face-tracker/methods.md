@@ -34,12 +34,14 @@ start_face_tracking_pipeline(
 
 - **`frame_iterator`** (Optional) - Custom frame source; if None, uses `config.video_source`
 - **`sink`** (Optional) - Custom output sink for results
-- **`sink_connection_point`** (str) - Where to attach the sink: `"detector"` (default) or `"recognizer"`
+- **`sink_connection_point`** (str) - Where to attach the sink in the pipeline:
+  - `"detector"` (default) - Attach after step #3 (Object Tracking) - receives raw tracking results before filtering and recognition
+  - `"recognizer"` - Attach after step #7 (Database Search) - receives final recognition results with identified faces
 
 ### Returns
 
-- `Composition` - Pipeline composition object (call `.wait()` to run)
-- `Watchdog` - Monitoring object for pipeline health
+- `Composition` - Pipeline composition object (call `.wait()` to run). See [Composition Documentation](https://docs.degirum.com/degirum-tools/streams/streams_base#composition) for details
+- `Watchdog` - Monitoring object for pipeline health. See [Watchdog Documentation](https://docs.degirum.com/degirum-tools/streams/streams_base#watchdog) for details
 
 ### Example: Security Monitoring
 

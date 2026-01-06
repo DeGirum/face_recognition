@@ -21,7 +21,7 @@ FaceTracker adds the following tracking-specific parameters:
 
 **Parameters:**
 
-- **`video_source`** - Input video source:
+- **`video_source`** - Input video source (default: 0 for first webcam):
   - Integer (e.g., `0`, `1`) - Local webcam index
   - String path (e.g., `"video.mp4"`) - Video file
   - RTSP URL (e.g., `"rtsp://192.168.1.100/stream"`) - IP camera
@@ -38,7 +38,7 @@ Controls when a detected face is confirmed as a valid track for processing.
 
 **Parameter:**
 
-- **`credence_count`** - Number of consecutive frames a face must appear before being confirmed. Reduces false positives from momentary detections or camera noise.
+- **`credence_count`** - Number of consecutive frames a face must appear before being confirmed (default: 1). Reduces false positives from momentary detections or camera noise.
 
 **Recommended values:**
 - `2-4` - Real-time monitoring (quick confirmation)
@@ -53,15 +53,15 @@ Controls when alerts are triggered and how notifications are delivered.
 
 **Parameters:**
 
-- **`alert_mode`** - When to trigger alerts:
+- **`alert_mode`** - When to trigger alerts (default: AlertMode.NONE):
   - `AlertMode.NONE` - No alerts
   - `AlertMode.ON_UNKNOWNS` - Alert when unknown face detected
   - `AlertMode.ON_KNOWNS` - Alert when known face detected
   - `AlertMode.ON_ALL` - Alert for all faces
 
-- **`alert_once`** (bool) - Alert once per track (True) or continuously (False)
+- **`alert_once`** (bool) - Alert once per track (True) or every time attributes change for the given track ID (False) (default: True)
 
-- **`clip_duration`** (int) - Length of video clips in frames (e.g., 100 frames ≈ 3.3 seconds at 30 FPS)
+- **`clip_duration`** (int) - Length of video clips in frames (default: 0 = no recording, e.g., 100 frames ≈ 3.3 seconds at 30 FPS)
 
 - **`notification_config`** (str) - Apprise configuration string for notification delivery
 
@@ -126,8 +126,8 @@ Controls video output display.
 Tracking-specific filter that reduces embedding extraction frequency using adaptive exponential backoff. When enabled, the interval between embedding extractions increases exponentially (1 → 2 → 4 → 8 → ...) up to the configured `reid_expiration_frames` maximum, improving performance 10-20x while maintaining accuracy.
 
 Configured via `face_filters` parameter:
-- **`enable_reid_expiration_filter`** - Enable/disable (default: True)
-- **`reid_expiration_frames`** - Maximum interval in frames (default: 30)
+- **`enable_reid_expiration_filter`** - Enable/disable (default: False)
+- **`reid_expiration_frames`** - Maximum interval in frames (default: 10)
 
 See [ReID Expiration Filter](../../reference/face-filters.md#5-reid-expiration-filter) for complete documentation including tuning guidance and examples.
 

@@ -2,7 +2,7 @@
 
 ## What is FaceTracker?
 
-`FaceTracker` extends `FaceRecognizer` for **production video surveillance applications**. While `FaceRecognizer` processes individual images independently, `FaceTracker` adds persistent face tracking, automated alerting, video clip recording, and live streaming capabilities for continuous video monitoring.
+`FaceTracker` builds on `FaceRecognizer` capabilities for **production video surveillance applications**. While `FaceRecognizer` processes individual images independently, `FaceTracker` adds persistent face tracking, automated alerting, video clip recording, and live streaming capabilities for continuous video monitoring.
 
 ## Key Differences from FaceRecognizer
 

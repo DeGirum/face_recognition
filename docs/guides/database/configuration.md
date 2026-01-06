@@ -100,7 +100,12 @@ db = ReID_DatabasePool.get("./faces.lance")
 # Subsequent calls return same instance
 db2 = ReID_DatabasePool.get("./faces.lance")
 assert db is db2  # Same connection
+
+# Thread safety: Database objects are thread-safe
+# Safe to obtain multiple references and use them concurrently
 ```
+
+**Thread Safety:** Database objects returned by the pool are thread-safe. You can safely obtain multiple references to the same database object and use them concurrently from different threads.
 
 ### Using ReID_Database Directly
 

@@ -16,9 +16,11 @@ config = degirum_face.FaceRecognizerConfig(
 )
 ```
 
-### 1. Face Detection Model Spec (Required)
+### 1. Face Detection Model Spec
 
 Specifies which model detects faces and their bounding boxes.
+
+**Default:** Auto-selected for TFLITE/CPU running locally
 
 ```python
 detector_spec = degirum_face.get_face_detection_model_spec(
@@ -27,9 +29,11 @@ detector_spec = degirum_face.get_face_detection_model_spec(
 )
 ```
 
-### 2. Face Embedding Model Spec (Required)
+### 2. Face Embedding Model Spec
 
 Specifies which model extracts face embeddings for matching.
+
+**Default:** Auto-selected for TFLITE/CPU running locally
 
 ```python
 embedding_spec = degirum_face.get_face_embedding_model_spec(
@@ -38,23 +42,27 @@ embedding_spec = degirum_face.get_face_embedding_model_spec(
 )
 ```
 
-### 3. Database Path (Required)
+### 3. Database Path
 
 Where to store enrolled face embeddings (LanceDB file).
+
+**Default:** `./face_recognition.lance`
 
 ```python
 db_path="./face_reid_db.lance"
 ```
 
-### 4. Similarity Threshold (Required)
+### 4. Similarity Threshold
 
 Minimum cosine similarity (0.0-1.0) to consider two faces a match.
+
+**Default:** `0.6`
 
 ```python
 cosine_similarity_threshold=0.6  # Higher = stricter
 ```
 
-### 5. Face Filters (Optional)
+### 5. Face Filters 
 
 Quality gates to skip low-quality detections. See [Face Filters Reference](../../reference/face-filters.md).
 

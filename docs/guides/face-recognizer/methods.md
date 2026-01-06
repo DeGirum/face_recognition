@@ -36,7 +36,7 @@ enroll_image(frame: Any, attributes: Any) -> Optional[FaceRecognitionResult]
 ### Parameters
 
 - **`frame`** - Image as numpy array or file path (str)
-- **`attributes`** - Person identifier (typically a name string)
+- **`attributes`** - Person identifier (typically a name string, but can be any Python dictionary). The dictionary structure must be the same for all enrollments
 
 ### Returns
 
@@ -189,7 +189,7 @@ print(f"Successfully enrolled {len(results)} faces")
 
 ### Best Practices
 
-- **Always use iterators:** `iter(list)` not just `list`
+- **Prefer using iterators:** `iter(list)` not just `list`
 - **Match lengths:** Ensure `frames` and `attributes` have same length
 - **Multiple photos per person:** Improves accuracy across different conditions
 - **Use batch for 3+ enrollments:** Performance benefit over individual calls

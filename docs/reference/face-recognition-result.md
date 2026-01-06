@@ -15,7 +15,7 @@ Contains face identity data without detection-specific information. Used primari
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `attributes` | str or None | Person name or metadata |
+| `attributes` | dict or str or None | Person metadata. Can be any Python dictionary containing person information (first name, last name, address, etc.) or a simple string for the person's name. Examples in this documentation use simple strings for clarity. |
 | `db_id` | str or None | Database ID if stored |
 | `embeddings` | list | Face embedding vector(s) (512-D each). May contain multiple embeddings when returned by `find_faces_in_file()` / `find_faces_in_clip()` |
 | `images` | list | Cropped face images (numpy arrays) corresponding to embeddings. May contain multiple images when returned by `find_faces_in_file()` / `find_faces_in_clip()` |
@@ -44,16 +44,18 @@ for track_id, face_data in faces.items():
     
     # Enroll if unknown
     if not face_data.attributes:
+        # Assign person identifier - could be a name, ID, or dict with metadata
+        face_data.attributes = f"Person_{track_id}"
         tracker.enroll(face_data)
 ```
 
 ## FaceRecognitionResult
 
-Includes all `FaceAttributes` properties plus detection-specific metadata. Used for real-time recognition results.
+Subclasses `FaceAttributes` to add detection-specific metadata. Used for real-time recognition results.
 
 ### Properties
 
-All `FaceAttributes` properties (`attributes`, `db_id`, `embeddings`, `images`) plus:
+Inherits all `FaceAttributes` properties (`attributes`, `db_id`, `embeddings`, `images`) plus:
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -130,13 +132,13 @@ for result in tracker.predict_batch(video_source):
 |--------|-------------|
 | `enroll_image()` | `Optional[FaceRecognitionResult]` |
 | `enroll_batch()` | `List[FaceRecognitionResult]` |
-| `predict()` | `InferenceResults` (with `.faces` property) |
+| `predict()` | `InferenceResults` (`.faces` property yields `FaceRecognitionResult` objects) |
 | `predict_batch()` | Iterator of `InferenceResults` |
 
 ### FaceTracker
 
 | Method | Return Type |
 |--------|-------------|
-| `predict_batch()` | Iterator of `InferenceResults` (with `.faces` property) |
+| `predict_batch()` | Iterator of `InferenceResults` (`.faces` property yields `FaceRecognitionResult` objects) |
 | `find_faces_in_file()` | `Dict[int, FaceAttributes]` |
 | `find_faces_in_clip()` | `Dict[int, FaceAttributes]` |

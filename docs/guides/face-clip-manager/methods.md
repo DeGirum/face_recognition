@@ -29,7 +29,7 @@ list_clips() -> Dict[str, dict]
 
 Dictionary mapping clip base names to file objects:
 - `"original"` - Original video clip file (`.mp4`)
-- `"annotated"` - Annotated video clip (if exists, `_annotated.mp4`)
+- `"annotated"` - Annotated video clip (if exists, `_annotated.mp4`). Created when `find_faces_in_clip()` is called with `save_annotated=True`
 - `"json"` - JSON annotations file (if exists, `.json`)
 
 Each file object is of type `minio.datatypes.Object` with properties:

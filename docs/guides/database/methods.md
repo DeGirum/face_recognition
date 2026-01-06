@@ -60,7 +60,7 @@ import uuid
 
 db = ReID_DatabasePool.get("./faces.lance")
 
-# Add new person
+# Add new person with simple string attribute
 person_id = str(uuid.uuid4())
 db.add_object(person_id, "Alice")
 
@@ -68,11 +68,37 @@ db.add_object(person_id, "Alice")
 db.add_object(person_id, "Alice Smith")
 ```
 
+**Example with dictionary attributes:**
+
+```python
+# First enrollment with dict attributes - defines database structure
+person1_id = str(uuid.uuid4())
+db.add_object(person1_id, {
+    "first_name": "Alice",
+    "last_name": "Smith",
+    "employee_id": "EMP001"
+})
+
+# All subsequent enrollments must follow the same structure
+# Same keys, same value types (str, int, etc.)
+person2_id = str(uuid.uuid4())
+db.add_object(person2_id, {
+    "first_name": "Bob",
+    "last_name": "Jones",
+    "employee_id": "EMP002"  # Must be same type (str)
+})
+
+# This would fail - different structure (missing key or different type)
+# db.add_object(person3_id, {"name": "Charlie"})  # ❌ Wrong keys
+```
+
+**Note:** The first attribute added to the database defines its structure. All subsequent attributes must have the same dictionary format - same keys and same value types.
+
 ---
 
 ### get_id_by_attributes()
 
-Get object ID by its attributes.
+Search for object ID by its attributes.
 
 ```python
 get_id_by_attributes(attributes: Any) -> Optional[str]
@@ -132,7 +158,7 @@ for obj_id, attributes in people.items():
 
 ### remove_object_by_id()
 
-Remove person and all their embeddings.
+Remove person and all their embeddings and associated images.
 
 ```python
 remove_object_by_id(object_id: str)
@@ -207,7 +233,7 @@ count = db.add_embeddings(person_id, embeddings, images=images)
 
 ### add_embeddings_for_attributes()
 
-Add embeddings for person attributes (creates person if needed).
+Add embeddings for person attributes (creates person if needed). Object ID will be created automatically as a uuid4 string.
 
 ```python
 add_embeddings_for_attributes(
@@ -268,7 +294,7 @@ embeddings, _ = db.get_embeddings(person_id, retrieve_images=False)
 
 ### remove_embeddings_by_id()
 
-Remove all embeddings for a person (keeps person record).
+Remove all embeddings and associated images for a person (keeps person record).
 
 ```python
 remove_embeddings_by_id(object_id: str)
@@ -284,7 +310,7 @@ db.remove_embeddings_by_id(person_id)
 
 ### remove_embeddings_by_attributes()
 
-Remove embeddings by person attributes.
+Remove embeddings and associated images by person attributes.
 
 ```python
 remove_embeddings_by_attributes(attributes: Any)
