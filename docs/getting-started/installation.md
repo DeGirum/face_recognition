@@ -3,6 +3,7 @@
 ## Prerequisites
 
 - **Python & OS Requirements:** See [DeGirum PySDK Documentation](https://docs.degirum.com/pysdk/installation)
+- **DeGirum AI Hub Account:** You need a workspace with permissions to generate a license for `degirum-face`
 - **Hardware Acceleration (optional):** See [Runtimes & Drivers](https://docs.degirum.com/pysdk/runtimes-and-drivers) for hardware-specific runtime setup
 
 ---
