@@ -104,5 +104,8 @@ See [examples/](examples) for all available examples.
 - [Object Storage](docs/reference/storage-config.md) - S3 and local clip storage
 
 ## License
-See [LICENSE](LICENSE) for license details.
+
+This repository (examples, documentation, and tutorials) is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+**Note:** The `degirum-face` library itself requires a license from DeGirum. This MIT license applies only to the example code and documentation in this repository, not to the `degirum-face` package. See the [documentation](docs/index.md#licensing) for more information about `degirum-face` licensing.
 
