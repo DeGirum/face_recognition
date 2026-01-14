@@ -21,7 +21,7 @@ These keypoints enable face alignment - a critical step for accurate embedding e
 
 ### License
 
-Face detection model licenses are included in `degirum_face` licensing. Contact DeGirum for licensing information.
+Face detection models are trained by DeGirum and can be used commercially when users license the `degirum-face` package. Contact DeGirum for licensing information.
 
 ### Model Details
 
@@ -56,7 +56,7 @@ Face embedding models convert aligned face images into numerical vectors (embedd
 
 ### License
 
-Face embedding models currently available in the DeGirum registry require contacting Hailo for commercial licensing. Please reach out to Hailo for licensing terms and conditions.
+The ONNX file for the face embedding model is from the [Hailo Model Zoo](https://github.com/hailo-ai/hailo_model_zoo) and is licensed under the MIT license. See [THIRD-PARTY-LICENSES.md](../../THIRD-PARTY-LICENSES.md) for the complete license text and copyright notice.
 
 ### Model Details
 
@@ -131,3 +131,7 @@ Performance varies by hardware platform and model complexity. Key factors:
 - Batch processing improves throughput for multiple faces
 
 For production deployments, test with your specific hardware and video resolution to determine optimal settings.
+
+## Acknowledgments
+
+We gratefully acknowledge [Hailo](https://hailo.ai/) for providing the ArcFace MobileFacenet ONNX model through the [Hailo Model Zoo](https://github.com/hailo-ai/hailo_model_zoo). This model enables high-quality face recognition capabilities in `degirum-face`. DeGirum has compiled and optimized this model for all supported hardware platforms to ensure consistent performance across different deployment scenarios.
