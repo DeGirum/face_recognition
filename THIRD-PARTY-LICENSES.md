@@ -6,9 +6,15 @@ This document contains the licenses for third-party software components used in 
 
 The face embedding model used in `degirum-face` is sourced from the Hailo Model Zoo.
 
-**Source:** https://github.com/hailo-ai/hailo_model_zoo
+**Repository:** https://github.com/hailo-ai/hailo_model_zoo
+
+**Model Documentation:** https://github.com/hailo-ai/hailo_model_zoo/blob/master/docs/public_models/HAILO8/HAILO8_face_recognition.rst
+
+**ONNX Model Download:** https://hailo-model-zoo.s3.eu-west-2.amazonaws.com/FaceRecognition/arcface_mobilefacenet/pretrained/2023-07-18/arcface_mobilefacenet.zip
 
 **License:** MIT License
+
+**License File:** https://github.com/hailo-ai/hailo_model_zoo/blob/master/LICENSE
 
 ```
 MIT License
