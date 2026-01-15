@@ -33,9 +33,13 @@ This repository demonstrates practical usage of the `degirum-face` Python packag
 pip install degirum-face
 ```
 
-**Requirements & Hardware Drivers:** See [DeGirum PySDK Documentation](https://docs.degirum.com/pysdk/installation) for Python/OS requirements and [Runtimes & Drivers](https://docs.degirum.com/pysdk/runtimes-and-drivers) for hardware acceleration setup.
+**Prerequisites:**
+- **AI Hub Account:** Create an account at [DeGirum AI Hub](https://hub.degirum.com/) and set up a workspace. See [Workspace Plans](https://docs.degirum.com/ai-hub/workspace-plans) for details.
+- **Authentication Token:** Set up your AI Hub token following the [token management guide](https://docs.degirum.com/pysdk/user-guide-pysdk/command-line-interface#manage-ai-hub-tokens).
+- **Python & OS:** See [DeGirum PySDK Documentation](https://docs.degirum.com/pysdk/installation) for requirements.
+- **Hardware Drivers (optional):** See [Runtimes & Drivers](https://docs.degirum.com/pysdk/runtimes-and-drivers) for hardware acceleration setup.
 
-**Quick Start:** Use `@cloud` inference to try without installing drivers locally.
+**Quick Start:** Use `@cloud` inference to try without installing drivers locally. The Quickstart example below uses local CPU models for immediate testing.
 
 ## Quickstart
 
