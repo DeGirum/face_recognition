@@ -1,6 +1,6 @@
 # Introduction
 
-**degirum-face** is a high-performance Python library for face detection, recognition, and tracking in images and video. Built for production deployments with minimal code and support for CPU and edge AI accelerators.
+**degirum-face** is a high-performance Python library for face detection, recognition, and tracking in images and video. Built for production deployments with minimal code and support for CPU and edge AI accelerators. Code examples and usage tutorials are available in the [DeGirum Face Recognition repo](https://github.com/DeGirum/degirum_face).
 
 **Fast and efficient** face recognition with:
 - Face detection, alignment, embedding extraction, and matching for images, video files, and live streams
