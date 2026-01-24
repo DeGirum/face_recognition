@@ -27,7 +27,7 @@ Ready-to-run code examples are available in the [DeGirum Face Recognition reposi
 **Import errors or module not found**
 Ensure degirum-face is installed in your active Python environment:
 ```bash
-pip install degirum-face
+pip install -i https://pkg.degirum.com degirum-face
 ```
 
 **Model loading failures**

@@ -29,8 +29,10 @@ This repository demonstrates practical usage of the `degirum-face` Python packag
 
 ## Installation
 
+DeGirum hosts its own PyPI server for DeGirum packages.
+
 ```bash
-pip install degirum-face
+pip install -i https://pkg.degirum.com degirum-face
 ```
 
 **Prerequisites:**

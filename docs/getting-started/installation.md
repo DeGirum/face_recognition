@@ -15,17 +15,17 @@ Follow these steps to get started with `degirum-face`:
 1. **Create AI Hub Account:** Sign up at [AI Hub](https://hub.degirum.com/) if you don't have an account
 2. **Set up Workspace:** Create or join a workspace with the appropriate plan (see [Workspace Plans](https://docs.degirum.com/ai-hub/workspace-plans))
 3. **Generate Token:** Follow the [token management guide](https://docs.degirum.com/pysdk/user-guide-pysdk/command-line-interface#manage-ai-hub-tokens) to set up authentication
-4. **Install Package:** Run `pip install degirum-face`
+4. **Install Package:** Run `pip install -i https://pkg.degirum.com degirum-face`
 5. **(Optional) Install Hardware Drivers:** If using hardware acceleration, set up the required drivers
 
 ---
 
 ## Installation
 
-Install from PyPI:
+DeGirum hosts its own PyPI server for DeGirum packages.
 
 ```bash
-pip install degirum-face
+pip install -i https://pkg.degirum.com degirum-face
 ```
 
 ---
