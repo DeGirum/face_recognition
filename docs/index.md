@@ -12,7 +12,9 @@
 
 ## Licensing
 
-`degirum-face` is one of the application packages licensed by DeGirum. Licensing is managed through [DeGirum AI Hub](https://hub.degirum.com/). Users need to create an AI Hub account and set up a workspace with the appropriate permissions to generate licenses for `degirum-face`. For workspace plan details and pricing information, visit the [Workspace Plans](https://docs.degirum.com/ai-hub/workspace-plans) page and the [DeGirum Pricing Page](https://degirum.com/pricing).
+`degirum-face` is one of the application packages licensed by DeGirum. Licensing is managed through [DeGirum AI Hub](https://hub.degirum.com/). Users need to create an AI Hub account and set up a workspace with the appropriate permissions to generate licenses for `degirum-face`. 
+
+For complete information on application package licensing, see the [Application Package Licensing Guide](https://docs.degirum.com/ai-hub/application-package-licensing). For workspace plan details and pricing information, visit the [Workspace Plans](https://docs.degirum.com/ai-hub/workspace-plans) page and the [DeGirum Pricing Page](https://degirum.com/pricing).
 
 The library provides code and pipelines for face recognition workflows. Model licensing is separate from the library licensing:
 
