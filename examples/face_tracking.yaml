@@ -22,6 +22,12 @@ face_embedder:
 db_path: "temp/face_reid_db.lance" # path to the embedding database file
 cosine_similarity_threshold: 0.5 # cosine distance threshold for face embeddings
 
+# read consistency interval for multi-process scenarios (optional)
+# Useful when multiple processes access the same database (e.g., one process enrolling while others track)
+# Set to time interval in seconds for readers to check for updates from writers
+# Typical values: 0.1-1.0 seconds. Omit or comment out to use LanceDB default behavior.
+# read_consistency_interval: 0.5
+
 # configuration for face filters
 face_filters:
   # small face filter: face is small when the minimum size of the smaller side of the face bbox
@@ -44,8 +50,9 @@ face_filters:
   reid_expiration_frames: 10
 
 # configuration for clip storage
+# IMPORTANT: For local storage, create the directory before running (e.g., mkdir -p ./temp)
 storage:
-  endpoint: ./temp # endpoint url, or path to local folder for local storage
+  endpoint: ./temp # endpoint url, or path to local folder for local storage (directory must exist)
   access_key: "" # access key for S3-compatible storage
   secret_key: "" # secret key for S3-compatible storage
   bucket: unknown_faces # bucket name for S3-compatible storage or subdirectory name for local storage

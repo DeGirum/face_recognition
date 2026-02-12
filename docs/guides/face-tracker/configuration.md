@@ -177,7 +177,7 @@ config = degirum_face.FaceTrackerConfig(
     alert_once=True,
     clip_duration=100,
     
-    # Clip storage
+    # Clip storage (directory must exist before running)
     clip_storage_config=degirum_tools.ObjectStorageConfig(
         endpoint="./security_clips",
         bucket="unknown_persons"
@@ -192,6 +192,10 @@ config = degirum_face.FaceTrackerConfig(
     live_stream_mode="WEB",
     live_stream_rtsp_url="security_entrance",
 )
+
+# Create the storage directory if it doesn't exist (for local storage)
+from pathlib import Path
+Path("./security_clips").mkdir(parents=True, exist_ok=True)
 
 tracker = degirum_face.FaceTracker(config)
 ```
@@ -245,7 +249,7 @@ alerts:
 
 # Clip storage
 storage:
-  endpoint: "./security_clips"
+  endpoint: "./security_clips"              # IMPORTANT: Directory must exist before running
   access_key: ""
   secret_key: ""
   bucket: "unknown_persons"
@@ -397,3 +401,39 @@ config = degirum_face.FaceTrackerConfig(
 
 tracker = degirum_face.FaceTracker(config)
 ```
+
+---
+
+## Troubleshooting
+
+### "Path not allowed" Error
+
+**Problem:** Getting "path not allowed" error when using local storage endpoint.
+
+**Cause:** The local directory specified in `storage.endpoint` doesn't exist. When the path doesn't exist, the system treats it as an S3 bucket endpoint and validation fails.
+
+**Solution:** Create the directory before running the tracker:
+
+```python
+from pathlib import Path
+
+# Create storage directory
+storage_path = Path("./security_clips")
+storage_path.mkdir(parents=True, exist_ok=True)
+
+# Then configure tracker
+config = degirum_face.FaceTrackerConfig(
+    clip_storage_config=degirum_tools.ObjectStorageConfig(
+        endpoint="./security_clips",
+        bucket="alerts"
+    ),
+    # ... other settings
+)
+```
+
+Or in your shell before running:
+```bash
+mkdir -p ./security_clips
+```
+
+See [Object Storage Configuration Reference](../../reference/storage-config.md) for more details.

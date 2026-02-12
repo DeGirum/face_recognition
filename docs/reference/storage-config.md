@@ -31,6 +31,11 @@ Store files in a local directory:
 
 ```python
 import degirum_tools
+from pathlib import Path
+
+# IMPORTANT: Create the directory before using it
+endpoint_path = Path("./clips")
+endpoint_path.mkdir(parents=True, exist_ok=True)
 
 storage_config = degirum_tools.ObjectStorageConfig(
     endpoint="./clips",
@@ -39,6 +44,8 @@ storage_config = degirum_tools.ObjectStorageConfig(
 ```
 
 Files are saved to: `./clips/alerts/`
+
+**⚠️ Important:** The endpoint directory **must exist** before configuration. If the path doesn't exist, the system treats it as an S3 bucket endpoint and will fail with a "path not allowed" error.
 
 **Use for:**
 - Development and testing
