@@ -560,7 +560,7 @@ def main_page():
 
                         assert context.client.request
                         host = context.client.request.headers.get("host", "localhost")
-                        stream_url = f"http://{host.split(':')[0]}:8888/{app.state.config.live_stream_rtsp_url}"
+                        stream_url = f"http://{host.split(':')[0]}:8889/{app.state.config.live_stream_rtsp_url}"
                         ui.element("iframe").props(f'src="{stream_url}"').classes(
                             "w-full h-[calc(100vh-12rem)]"
                         )
@@ -578,7 +578,7 @@ def stream_page():
     assert context.client.request
     host = context.client.request.headers.get("host", "localhost")
     stream_url = (
-        f"http://{host.split(':')[0]}:8888/{app.state.config.live_stream_rtsp_url}"
+        f"http://{host.split(':')[0]}:8889/{app.state.config.live_stream_rtsp_url}"
     )
     ui.label("Live Stream").classes("text-xl font-bold mb-4")
     ui.element("iframe").props(f'src="{stream_url}"').classes(
