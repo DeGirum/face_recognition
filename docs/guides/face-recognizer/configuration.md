@@ -12,7 +12,8 @@ config = degirum_face.FaceRecognizerConfig(
     face_embedding_model_spec=embedding_spec,  # 2. Embedding model
     db_path="./face_db.lance",                 # 3. Database path
     cosine_similarity_threshold=0.6,           # 4. Matching threshold
-    face_filters=filter_config,                # 5. Quality filters (optional)
+    read_consistency_interval=None,            # 5. Multi-process sync (optional)
+    face_filters=filter_config,                # 6. Quality filters (optional)
 )
 ```
 
@@ -62,7 +63,29 @@ Minimum cosine similarity (0.0-1.0) to consider two faces a match.
 cosine_similarity_threshold=0.6  # Higher = stricter
 ```
 
-### 5. Face Filters 
+### 5. Read Consistency Interval (Optional)
+
+Time interval in seconds for read consistency when multiple processes access the same database. Controls how frequently readers check for updates from writers.
+
+**Default:** `None` (uses LanceDB default behavior)
+
+```python
+read_consistency_interval=0.5  # Check for updates every 0.5 seconds
+```
+
+**When to use:**
+- Multiple processes accessing the same database
+- One process enrolling while others perform recognition
+- Distributed face recognition systems
+
+**Recommended values:**
+- `0.1-0.5` seconds - Real-time applications
+- `0.5-1.0` seconds - General use
+- `None` - Single-process applications
+
+See [Database Configuration](../database/configuration.md#read_consistency_interval-optional) for details.
+
+### 6. Face Filters 
 
 Quality gates to skip low-quality detections. See [Face Filters Reference](../../reference/face-filters.md).
 
@@ -169,6 +192,10 @@ face_embedder:
 # Database configuration
 db_path: ./face_recognition_db.lance
 cosine_similarity_threshold: 0.6
+
+# Multi-process synchronization (optional)
+# Useful when one process enrolls while others perform recognition
+# read_consistency_interval: 0.5
 
 # Face filtering (optional)
 face_filters:
