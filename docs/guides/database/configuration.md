@@ -2,14 +2,15 @@
 
 ## Configuration Overview
 
-`ReID_Database` is configured with two parameters:
+`ReID_Database` is configured with three parameters:
 
 ```python
 from degirum_face.reid_database import ReID_DatabasePool
 
 db = ReID_DatabasePool.get(
-    db_path="./faces.lance",          # Required: database location
-    model_name="arcface_resnet100"    # Optional: model validation
+    db_path="./faces.lance",                  # Required: database location
+    model_name="arcface_resnet100",           # Optional: model validation
+    read_consistency_interval=0.5             # Optional: multi-process synchronization
 )
 ```
 
@@ -82,6 +83,47 @@ db3 = ReID_DatabasePool.get(
 **When to omit:**
 - Single-model deployments
 - Testing/development
+
+---
+
+### read_consistency_interval (optional)
+
+Time interval in seconds for read consistency in multi-process scenarios. Controls how frequently database readers check for updates from writers.
+
+**Use case:** When multiple processes access the same database - one process enrolling faces while others perform recognition/tracking.
+
+**Example:**
+```python
+# Enrolling process (writer) - can use default
+enroller_db = ReID_DatabasePool.get(
+    db_path="./shared_faces.lance",
+    model_name="arcface_resnet100"
+    # read_consistency_interval not needed
+)
+
+# Tracking processes (readers) - refresh every 0.5 seconds
+tracker_db = ReID_DatabasePool.get(
+    db_path="./shared_faces.lance",
+    model_name="arcface_resnet100",
+    read_consistency_interval=0.5  # Check for new enrollments
+)
+```
+
+**Recommended values:**
+- `0.1-0.5` - Real-time applications (low latency)
+- `0.5-1.0` - General use (balanced)
+- `1.0+` - Batch processing (lower overhead)
+- `None` - Single process or default behavior
+
+**When to use:**
+- Multiple cameras/processes reading from shared database
+- One process enrolling while others track
+- Distributed face recognition systems
+
+**When to omit:**
+- Single-process applications
+- Writer-only processes
+- Read-only batch processing
 
 ---
 

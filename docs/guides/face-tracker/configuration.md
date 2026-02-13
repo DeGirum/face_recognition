@@ -7,6 +7,7 @@
 - **Model specifications** - Face detection and embedding models (device_type, inference_host_address)
 - **Database path** - Where face embeddings are stored  
 - **Similarity threshold** - Matching confidence (0.0-1.0)
+- **Read consistency interval** - Multi-process database synchronization (optional)
 - **Face filters** - Quality gates (small face, frontal, zone, shift)
 
 See [FaceRecognizer Configuration](../face-recognizer/configuration.md) for details on these settings.
