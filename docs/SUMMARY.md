@@ -28,7 +28,17 @@
 * [Face Data Classes](reference/face-recognition-result.md)
 * [Face Filters](reference/face-filters.md)
 * [Object Storage Configuration](reference/storage-config.md)
-* [Complete API Reference](api-reference/README.md)
+
+## Complete API Reference
+
+* [Configs](api-reference/configs.md)
+* [Discovery](api-reference/discovery.md)
+* [Face Data](api-reference/face_data.md)
+* [Face Tracking](api-reference/face_tracking.md)
+* [Face Tracking Gizmos](api-reference/face_tracking_gizmos.md)
+* [Face Utils](api-reference/face_utils.md)
+* [Logging Config](api-reference/logging_config.md)
+* [ReID Database](api-reference/reid_database.md)
 
 ## Resources
 
